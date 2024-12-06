@@ -30,7 +30,7 @@ class LegoWorld:
                         for dx in range(2)
                     ):
                         brick_id += 1
-                        self.world.append(Brick(x=x * brick_ref.w, y=-height_multiplier * brick_ref.h, z=0, brick_ref=brick_ref, brick_id=brick_id))
+                        self.world.append(Brick(x=x * brick_ref.w / 2, y=-height_multiplier * brick_ref.h, z=0, brick_ref=brick_ref, brick_id=brick_id))
                         for dx in range(2):
                             visited[y][x + dx] = True
 
@@ -93,14 +93,14 @@ class LegoWorld:
 
         return illegal_bricks
 
-    def _format_ldraw(self):
+    def format_ldraw(self):
         ldr_line = []
         for brick in self.world:
             ldr_line.append(f"1 {brick.brick_ref.color} {brick.x} {brick.y} {brick.z} 1 0 0 0 1 0 0 0 1 {brick.brick_ref.file_id}")
         return ldr_line
 
     def save_ldr(self, filename):
-        data = self._format_ldraw(self.world)
+        data = self.format_ldraw()
         with open(filename + ".ldr", "w") as file:
             for line in data:
                 file.write(line + "\n")

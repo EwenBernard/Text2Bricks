@@ -38,7 +38,7 @@ class Brick(BaseModel):
         Returns:
             bool: True if connected, False otherwise.
         """
-        
+
         if (
             abs(self.x - other_brick.x) < self.brick_ref.w and
             abs(self.z - other_brick.z) < self.brick_ref.d and
