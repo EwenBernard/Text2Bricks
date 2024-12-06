@@ -47,7 +47,7 @@ class Brick(BaseModel):
                 other_brick.y == self.y - self.brick_ref.h
             )
         ):
-            print(f"Connected: {self.brick_id} and {other_brick.brick_id}")
+            #print(f"Connected: {self.brick_id} and {other_brick.brick_id}")
             return True
         return False
 

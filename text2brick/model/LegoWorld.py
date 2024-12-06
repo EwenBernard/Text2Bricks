@@ -86,7 +86,7 @@ class LegoWorld:
         # Check remaining bricks
         for brick in self.world:
             if brick.brick_id not in valid_bricks:
-                if brick.y < 0 and not brick.connected_to:
+                if brick.y < 0:
                     illegal_bricks.append((brick, "Floating brick - no connections and below ground"))
                 elif brick.y > 0:
                     illegal_bricks.append((brick, "Brick above ground level"))
@@ -109,4 +109,4 @@ class LegoWorld:
         return f"Piece Count : {len(self.world)}\n" + "\n".join([brick.coords() for brick in self.world])
 
     def str_full_infos(self):
-        return "\n".join([str(brick) for brick in self.world])
+        return "Lego World Bricks\n" + "\n".join([str(brick) for brick in self.world])
