@@ -12,7 +12,7 @@ class LegoEnv(gym.Env):
         self.observation_space = spaces.MultiBinary([size, size])
 
         # Action space: coordinates within the grid
-        self.action_space = spaces.MultiDiscrete([size, size])
+        self.action_space = spaces.MultiDiscrete([size, size - 1])
         
         # Initialize the grid with zeros
         self.current_state = np.zeros((size, size), dtype=int)
@@ -43,8 +43,8 @@ class LegoEnv(gym.Env):
         # Extract row and column from the action
         row, col = action
 
-        # Update the specified cell in the grid to 1
-        self.current_state[row, col] = 1
+        # Update the specified cells in the grid to 1
+        self.current_state[row, col:col + 2] = 1
 
         # Placeholder reward and done flag
         reward = 0
