@@ -2,6 +2,7 @@ from PIL import Image
 import numpy as np
 from sklearn.datasets import fetch_openml
 import logging
+from typing import Tuple
 
 from text2brick.utils.ImageUtils import array_to_image
 
@@ -12,7 +13,7 @@ class Dataset:
     and modifying samples by truncating rows or columns.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes the Dataset by loading the MNIST data from OpenML.
         """
@@ -22,24 +23,33 @@ class Dataset:
         self.labels = mnist.target  # Corresponding labels for the dataset
 
 
-    def _random_sample(self):
+    def _random_sample(self) -> np.array:
         """
-        Generates a random sample (image) from the MNIST dataset.
+        Generates a random sample (image) from the MNIST dataset, rearranging the array
+        to move all-zero rows to the top. Converts the grayscale image into a binary format.
 
         Returns:
-            np.ndarray: A 28x28 binary array representing the sampled image.
+            np.ndarray: A 28x28 binary array representing the sampled image with all-zero rows moved to the top.
         """
-        random_index = np.random.randint(0, self.data.shape[0])  # Random index from the dataset
-        image_array = self.data.iloc[random_index].to_numpy().reshape(28, 28)  # Reshape to 28x28 pixels
-        image_label = self.labels[random_index]
+        # Select a random index from the dataset and fetch the image data
+        random_index = np.random.randint(0, self.data.shape[0])
+        image_array = self.data.iloc[random_index].to_numpy().reshape(28, 28)
+
+        # Identify and separate all-zero rows and non-zero rows to place all-zero rows at the top
+        zero_rows = np.all(image_array == 0, axis=1)
+        non_zero_rows = image_array[~zero_rows]
+        zero_rows_only = image_array[zero_rows]
+        image_array = np.vstack((zero_rows_only, non_zero_rows))
 
         # Convert the grayscale image into binary (0 or 1)
         image_array = np.where(image_array > 0, 1, 0).astype(np.uint8)
 
+        image_label = self.labels[random_index]
+
         return image_array
 
 
-    def sample(self):
+    def sample(self) -> Tuple[np.array, Image.Image]:
         """
         Fetches a random sample from the dataset and converts it into an image.
 
@@ -52,15 +62,12 @@ class Dataset:
         return sample_array, sample_image
 
 
-    def sample_truncated_horizontally(self, n_rows: int):
+    def sample_truncated_horizontally(self, n_rows: int) -> Tuple[np.array, Image.Image]:
         """
         Fetches a random sample and truncates its top `n_rows` by setting them to 0.
 
         Args:
             n_rows (int): Number of rows to truncate.
-
-        Raises:
-            ValueError: If `n_rows` exceeds the total number of rows in the image.
 
         Returns:
             tuple: A tuple containing the modified binary array and its corresponding image object.
@@ -78,15 +85,12 @@ class Dataset:
         return sample_array, sample_image
 
 
-    def sample_truncated_vertically(self, n_columns: int):
+    def sample_truncated_vertically(self, n_columns: int) -> Tuple[np.array, Image.Image]:
         """
         Fetches a random sample and truncates its leftmost `n_columns` by setting them to 0.
 
         Args:
             n_columns (int): Number of columns to truncate.
-
-        Raises:
-            ValueError: If `n_columns` exceeds the total number of columns in the image.
 
         Returns:
             tuple: A tuple containing the modified binary array and its corresponding image object.
