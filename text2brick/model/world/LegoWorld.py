@@ -1,9 +1,11 @@
-from .Brick import Brick
+from ..Brick import Brick
 from typing import List
 
 class LegoWorld: 
     def __init__(self, table, brick_ref):
+        self.brick_table : List[int]= []
         self.world : List[Brick] = []
+        self.valid_bricks = set()
         self._table_2_world(table, brick_ref)
         self.initialize_connections()
 
@@ -47,6 +49,59 @@ class LegoWorld:
                     brick.add_connection(other_brick)
 
 
+    def check_last_brick_validity(self, brick):
+        """
+        Traverse the graph starting from a brick and mark connected bricks as valid.
+
+        Args:
+            brick (Brick): The starting brick for traversal.
+        """
+
+        # Brick is valid if y == 0 or connected to another valid brick
+        if brick.y == 0 or any(conn.brick_id in self.valid_bricks for conn in brick.connected_to):
+            self.valid_bricks.add(brick.brick_id)
+            return True
+        return False
+    
+
+    def add_last_brick_connection(self, brick):
+        """
+        Add a brick to the world and update connections.
+
+        Args:
+            brick (Brick): The brick to add.
+        """
+        for other_brick in self.world: 
+            if brick != other_brick:
+                if brick.is_connected_to(other_brick):
+                    brick.add_connection(other_brick)
+
+    
+    def add_brick_to_world(self, brick):
+        """
+        Add a brick to the world and update connections.
+
+        Args:
+            brick (Brick): The brick to add.
+        """
+        if self.check_last_brick_validity(brick):
+
+        self.world.append(brick)
+        self.add_last_brick_connection(brick)
+        self.check_last_brick_valid
+
+
+    def add_brick(self, brick):
+        """
+        Add a brick to the world and update connections.
+
+        Args:
+            brick (Brick): The brick to add.
+        """
+        self.world.append(brick)
+        self.initialize_connections()
+
+
     def check_illegal_bricks(self):
         """
         Check for illegal bricks in the world using a graph-based method.
@@ -58,7 +113,6 @@ class LegoWorld:
             list of tuple: Each tuple contains the illegal brick and the reason.
         """
         visited = set()
-        valid_bricks = set()  # Set of valid bricks (either directly on the ground or connected to valid ones)
         illegal_bricks = []
 
         def check_brick_validity(brick):
@@ -73,8 +127,8 @@ class LegoWorld:
             visited.add(brick.brick_id)
 
             # Brick is valid if y == 0 or connected to another valid brick
-            if brick.y == 0 or any(conn.brick_id in valid_bricks for conn in brick.connected_to):
-                valid_bricks.add(brick.brick_id)
+            if brick.y == 0 or any(conn.brick_id in self.valid_bricks for conn in brick.connected_to):
+                self.valid_bricks.add(brick.brick_id)
                 for conn in brick.connected_to:
                     check_brick_validity(conn)
 
@@ -85,7 +139,7 @@ class LegoWorld:
 
         # Check remaining bricks
         for brick in self.world:
-            if brick.brick_id not in valid_bricks:
+            if brick.brick_id not in self.valid_bricks:
                 if brick.y < 0:
                     illegal_bricks.append((brick, "Floating brick - no connections and below ground"))
                 elif brick.y > 0:

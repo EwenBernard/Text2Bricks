@@ -8,6 +8,9 @@ class LegoEnv(gym.Env):
 
         self.size = size
 
+        #TODO Init brick in the world
+        #TODO init world 
+
         # Observation space: binary grid of shape (size, size)
         self.observation_space = spaces.MultiBinary([size, size])
 
@@ -37,8 +40,14 @@ class LegoEnv(gym.Env):
         Returns:
             tuple: (observation, reward, done, info)
         """
+        #TODO Reward function
+        #TODO assert function validation des briques
+        #TODO Add brick to world
+
         # Validate the action using the action space
         assert self.action_space.contains(action), f"Invalid action: {action}"
+
+
 
         # Extract row and column from the action
         row, col = action
@@ -52,3 +61,4 @@ class LegoEnv(gym.Env):
         info = {}
 
         return self.current_state, reward, done, info
+

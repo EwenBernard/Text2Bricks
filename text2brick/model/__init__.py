@@ -1,3 +1,3 @@
 from .Brick import Brick, BrickRef
-from .LegoWorld import LegoWorld
-from .LegoEnv import LegoEnv
+from .world.LegoWorld import LegoWorld
+from ..gym.env.LegoEnv import LegoEnv
