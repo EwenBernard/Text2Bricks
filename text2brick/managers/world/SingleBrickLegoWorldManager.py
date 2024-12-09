@@ -1,20 +1,20 @@
-from typing import Any, List, Optional
+from typing import List
 from text2brick.models import Brick, BrickRef, SingleBrickLegoWorldData
 from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorldManager
 import logging
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
-    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1)) -> None:
+    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=True) -> None:
         super().__init__(table=table, world_dimension=world_dimension)
         self.data : SingleBrickLegoWorldData = self._create_world_from_table(table, brick_ref, world_dimension=world_dimension)
 
         if self.data.world:
             self._init_bricks_connections()
-            self._init_world_validity()
+            self._init_world_validity(remove_illegal_bricks=remove_illegal_brick_init)
 
         logging.debug(f"Initialized Lego World Manager with {len(self.data.world)} bricks.")
         logging.debug(f"World dimensions : {self.data.dimensions}")
-        logging.debug(f"Valid bricks : {self.valid_bricks}")
+        logging.debug(f"Valid bricks : {self.data.valid_bricks}")
         logging.debug(f"World : {self.data.world}")
 
 

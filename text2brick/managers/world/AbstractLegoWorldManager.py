@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
-from text2brick.models.Brick import Brick, BrickRef
+from text2brick.models.Brick import Brick
 from text2brick.models.LegoWorldData import AbstractLegoWorldData
 import logging
 
@@ -33,14 +33,21 @@ class AbstractLegoWorldManager(ABC):
         Args:
             brick (Brick): The brick to remove.
         """
+
+        #TODO check invalid brick after removal 
+        #or impossible to remove a brick if it makes the world invalid
+
+        #TODO fix remove brick from world
+
         if brick in self.data.world:
 
             for other_brick in self.data.world:
                 if brick in other_brick.connected_to:
                     other_brick.connected_to.remove(brick)
-
+    
             self.data.world.remove(brick)
-            self.valid_bricks.remove(brick.brick_id)
+            if brick.brick_id in self.data.valid_bricks:
+                self.data.valid_bricks.remove(brick.brick_id)
 
             logging.debug(f"Removed brick {brick.brick_id} from the world.")
             return True
@@ -60,17 +67,6 @@ class AbstractLegoWorldManager(ABC):
             if brick != other_brick:
                 brick.add_connection(other_brick)
 
-
-    def _init_bricks_connections(self) -> None:
-        """
-        Initializes the connections between bricks in the world.
-
-        Args:
-            world (list of Brick): List of all bricks.
-        """
-        for brick in self.data.world:
-           self.add_brick_connection(brick)
-
     
     def check_brick_validity(self, brick: Brick) -> bool:
         """
@@ -81,8 +77,8 @@ class AbstractLegoWorldManager(ABC):
         """
 
         # Brick is valid if y == 0 or connected to another valid brick
-        if brick.y == 0 or any(conn.brick_id in self.valid_bricks for conn in brick.connected_to):
-            self.valid_bricks.add(brick.brick_id)
+        if brick.y == 0 or any(conn.brick_id in self.data.valid_bricks for conn in brick.connected_to):
+            self.data.valid_bricks.add(brick.brick_id)
             return True
         return False
     
@@ -95,18 +91,29 @@ class AbstractLegoWorldManager(ABC):
             brick (Brick): The starting brick for traversal.
         """
         # If the brick has already been visited, return early
-        if brick.brick_id in self.valid_bricks:
+        if brick.brick_id in self.data.valid_bricks:
             return True
-        
+       
         # Brick is valid if y == 0 or connected to another valid brick
-        if brick.y == 0 or any(conn.brick_id in self.valid_bricks for conn in brick.connected_to):
-            self.valid_bricks.add(brick.brick_id)
+        if brick.y == 0 or any(conn.brick_id in self.data.valid_bricks for conn in brick.connected_to):
+            self.data.valid_bricks.add(brick.brick_id)
             # Recursively check all connected bricks
             for conn in brick.connected_to:
-                self.check_brick_validity(conn)
+                self.init_brick_validity(conn)
             return True
         
         return False
+
+
+    def _init_bricks_connections(self) -> None:
+        """
+        Initializes the connections between bricks in the world.
+
+        Args:
+            world (list of Brick): List of all bricks.
+        """
+        for brick in self.data.world:
+           self.add_brick_connection(brick)
 
 
     def _init_world_validity(self, remove_illegal_bricks=True, return_illegal_bricks=False) -> Optional[List[Tuple[Brick, str]]]:
@@ -119,19 +126,24 @@ class AbstractLegoWorldManager(ABC):
         Returns:
             Optional list of tuple: Each tuple contains the illegal brick and the reason.
         """
-        self.valid_bricks = set()
-        illegal_bricks = []
 
+        #TODO Remove double function from class
+        #TODO refactoring illegal brick check
+        
         for brick in self.data.world:
-           self.check_brick_validity(brick)
+            self.init_brick_validity(brick)
 
         if remove_illegal_bricks:
             logging.debug(f"Removing illegal bricks from the world.")
-            self.remove_illegal_bricks()
+            # Remove illegal bricks function 
+            for brick in self.data.world:
+                if brick.brick_id not in self.data.valid_bricks:
+                    self.remove_brick_from_world(brick)
 
         if return_illegal_bricks:
+            illegal_bricks = []
             for brick in self.data.world:
-                if brick.brick_id not in self.valid_bricks:
+                if brick.brick_id not in self.data.valid_bricks:
                     if brick.y < 0:
                         illegal_bricks.append((brick, "Floating brick - no connections and below ground"))
                     elif brick.y > 0:
@@ -139,18 +151,6 @@ class AbstractLegoWorldManager(ABC):
             logging.debug(f"Found {len(illegal_bricks)} illegal bricks in the world :\n{illegal_bricks}")
         
             return illegal_bricks
-
-
-    def remove_illegal_bricks(self) -> None:
-        """
-        Remove illegal bricks from the world.
-
-        Args:
-            world (list of Brick): All bricks in the world.
-        """
-        for brick in self.data.world:
-            if brick.brick_id not in self.valid_bricks:
-                self.data.world.remove(brick)
 
 
     @abstractmethod
