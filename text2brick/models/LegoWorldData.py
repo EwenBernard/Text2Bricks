@@ -9,12 +9,6 @@ class AbstractLegoWorldData(BaseModel, ABC):
     valid_bricks : Set[int] = Field(default_factory=set, description="Set of valid brick types")
     dimensions : Tuple[int, int, int] = Field(..., description="Dimensions of the Lego world (x, y, z)")
 
-    @field_validator("dimensions")
-    def check_y_dimension(cls, v):
-        if v[1] < 0:
-            raise ValueError("The 'y' dimension must be greater than or equal to 0.")
-        return v
-
     def __str__(self) -> str:
         return f"Piece Count : {len(self.world)}\n" + "\n".join([brick.coords() for brick in self.world])
 

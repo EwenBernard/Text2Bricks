@@ -122,7 +122,7 @@ class AbstractLegoWorldManager(ABC):
         self.valid_bricks = set()
         illegal_bricks = []
 
-        for brick in self.world:
+        for brick in self.data.world:
            self.check_brick_validity(brick)
 
         if remove_illegal_bricks:

@@ -28,8 +28,8 @@ class Brick(BaseModel):
 
     @field_validator("y")
     def check_y_dimension(cls, v):
-        if v[1] < 0:
-            raise ValueError("The 'y' dimension must be greater than or equal to 0.")
+        if v > 0:
+            raise ValidationError("The 'y' dimension must be inferior or equal to 0.")
         return v
 
     def __str__(self):
