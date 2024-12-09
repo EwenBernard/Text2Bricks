@@ -6,15 +6,7 @@ import logging
 
 class AbstractLegoWorldManager(ABC):
     def __init__(self, table: Optional[List[List[int]]] = [], world_dimension: Tuple[int, int, int]= (10, 10, 1), **kwargs) -> None:
-        self.data : AbstractLegoWorldData = self._create_world_from_table(table,  world_dimension=world_dimension, **kwargs)
-        if self.data.world:
-            self._init_bricks_connections()
-            self._init_world_validity()
-        logging.debug(f"Initialized Lego World Manager with {len(self.data.world)} bricks.")
-        logging.debug(f"World dimensions : {self.data.dimensions}")
-        logging.debug(f"Valid bricks : {self.valid_bricks}")
-        logging.debug(f"World : {self.data.world}")
-
+        pass 
 
     def add_brick_to_world(self, brick: Brick) -> None:
         """

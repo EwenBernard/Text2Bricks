@@ -1,2 +1,0 @@
-from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorld
-from SingleBrickLegoWorld import SingleBrickLegoWorld

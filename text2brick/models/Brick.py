@@ -1,4 +1,4 @@
-from pydantic import BaseModel, root_validator, ValidationError
+from pydantic import BaseModel, field_validator, ValidationError
 from typing import List
 
 
@@ -26,12 +26,11 @@ class Brick(BaseModel):
     brick_ref: BrickRef
     connected_to: List[BrickRef] = []
 
-    @root_validator
-    def check_y_dimension(cls, values):
-        y = values.get('y')
-        if y < 0:
+    @field_validator("y")
+    def check_y_dimension(cls, v):
+        if v[1] < 0:
             raise ValueError("The 'y' dimension must be greater than or equal to 0.")
-        return values
+        return v
 
     def __str__(self):
         return f"id: {self.brick_id} x: {self.x} | y: {self.y} | z: {self.z} | {self.brick_ref} | Connected to: {[brick.brick_id for brick in self.connected_to]}"

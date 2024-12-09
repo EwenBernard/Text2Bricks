@@ -1,11 +1,10 @@
 from typing import Any, List, Optional
-from text2brick.models.Brick import Brick, BrickRef
-from text2brick.models.LegoWorldData import SingleBrickLegoWorldData
+from text2brick.models import Brick, BrickRef, SingleBrickLegoWorldData
 from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorldManager
 import logging
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
-    def __init__(self, table: Optional[List[List[int]]] = [], brick_ref: Optional[BrickRef] = None, world_dimension = (10, 10, 1)) -> None:
+    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1)) -> None:
         super().__init__(table=table, world_dimension=world_dimension)
         self.data : SingleBrickLegoWorldData = self._create_world_from_table(table, brick_ref, world_dimension=world_dimension)
 
