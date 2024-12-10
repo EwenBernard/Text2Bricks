@@ -6,7 +6,7 @@ import numpy as np
 
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
-    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=True, return_illegal_brick=False) -> None:
+    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=False, return_illegal_brick=False) -> None:
         super().__init__(table=table, world_dimension=world_dimension)
         self.data : SingleBrickLegoWorldData = self._create_world_from_table(table, brick_ref, world_dimension=world_dimension)
 
@@ -70,7 +70,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         table = np.zeros((rows, cols), dtype=np.uint8)  # Create a NumPy array initialized with zeros
 
         for brick in self.data.world:
-            x_start = int(brick.x / (self.data.brick_ref.w / 2))
+            x_start = int(brick.x / (brick.brick_ref.w / 2))
             y_start = rows - 1 - int(-brick.y / self.data.brick_ref.h)  # Reverse the y-index
             for dx in range(2): 
                 if x_start + dx < cols:

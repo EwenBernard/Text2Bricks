@@ -290,7 +290,7 @@ class AbstractLegoWorldManager(ABC):
         pass
     
     @abstractmethod
-    def create_table_from_world(self, brick_world : AbstractLegoWorldData) -> List[List[int]]:
+    def recreate_table_from_world(self, brick_world : AbstractLegoWorldData) -> List[List[int]]:
         """
         Converts a LEGO brick world back into a 2D mapping array.
 
