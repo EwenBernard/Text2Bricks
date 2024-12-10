@@ -4,17 +4,18 @@ from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorld
 import logging
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
-    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=True) -> None:
+    def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=True, return_illegal_brick=False) -> None:
         super().__init__(table=table, world_dimension=world_dimension)
         self.data : SingleBrickLegoWorldData = self._create_world_from_table(table, brick_ref, world_dimension=world_dimension)
 
         if self.data.world:
             self._init_bricks_connections()
-            self._init_world_validity(remove_illegal_bricks=remove_illegal_brick_init)
+            self.data.illegal_bricks = self._init_world_validity(self.data, remove_illegal_bricks=remove_illegal_brick_init, return_illegal_bricks=return_illegal_brick)
 
         logging.debug(f"Initialized Lego World Manager with {len(self.data.world)} bricks.")
         logging.debug(f"World dimensions : {self.data.dimensions}")
         logging.debug(f"Valid bricks : {self.data.valid_bricks}")
+        logging.debug(f"Illegal Bricks : {self.illegal_bricks}")
         logging.debug(f"World : {self.data.world}")
 
 

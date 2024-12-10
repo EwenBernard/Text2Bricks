@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
-from pydantic import BaseModel, Field, field_validator, ValidationError
+from abc import ABC
+from pydantic import BaseModel, Field
 from typing import List, Tuple, Set
 from text2brick.models.Brick import Brick, BrickRef
 
@@ -18,5 +18,6 @@ class AbstractLegoWorldData(BaseModel, ABC):
 
 class SingleBrickLegoWorldData(AbstractLegoWorldData): 
     brick_ref : BrickRef = Field(..., description="Reference to a specific brick")
+    illegal_bricks : Set[Tuple[Brick, str]] = Field(default_factory=set, description="Set of illegal brick types")
 
     
