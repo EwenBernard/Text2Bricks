@@ -2,6 +2,8 @@ from typing import List
 from text2brick.models import Brick, BrickRef, SingleBrickLegoWorldData
 from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorldManager
 import logging
+import numpy as np
+
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
     def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=True, return_illegal_brick=False) -> None:
@@ -16,6 +18,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         logging.debug(f"Initialized Lego World Manager with {len(self.data.world)} bricks.")
         logging.debug(f"World dimensions : {self.data.dimensions}")
         logging.debug(f"Valid bricks : {self.data.valid_bricks}")
+        logging.debug(f"Illegal Bricks : {self.data.illegal_bricks}")
         logging.debug(f"Illegal Bricks : {self.data.illegal_bricks}")
         logging.debug(f"World : {self.data.world}")
 
@@ -56,28 +59,21 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         return SingleBrickLegoWorldData(world=world, brick_ref=brick_ref, dimensions=(rows, cols, 1))
     
 
-    def create_table_from_world(self, data : SingleBrickLegoWorldData) -> List[List[int]]:
+    def recreate_table_from_world(self):
         """
-        Converts a LEGO brick world back into a 2D mapping array.
-
-        Args:
-            brick_world (list of Brick): List of Brick objects representing the LEGO world.
-            world_dimension (tuple): Dimensions of the world as (rows, cols, height). Defaults to (10, 10, 1).
+        Reconstruct a 2D array of 0s and 1s from the world data.
 
         Returns:
-            list of list of int: A 2D array where 1 represents a stud and 0 represents empty space.
+            np.ndarray: 2D array of 0s and 1s representing the table.
         """
-        rows, cols, _ = data.dimensions
-        table = [[0] * cols for _ in range(rows)]
+        rows, cols, _ = self.data.dimensions
+        table = np.zeros((rows, cols), dtype=np.uint8)  # Create a NumPy array initialized with zeros
 
-        for brick in data.world:
-            logging.debug(f"BRICK {brick}")
-            row = rows - 1 + int(brick.y / brick.brick_ref.h)
+        for brick in self.data.world:
+            x_start = int(brick.x / (self.data.brick_ref.w / 2))
+            y_start = rows - 1 - int(-brick.y / self.data.brick_ref.h)  # Reverse the y-index
+            for dx in range(2): 
+                if x_start + dx < cols:
+                    table[y_start, x_start + dx] = 1
 
-            # Add the brick's coverage to the table
-            for dx in range(brick.brick_ref.w):
-                if brick.x + dx < cols:
-                    logging.debug(f"ADD COORD {row} {brick.x + dx}")
-                    table[row][brick.x + dx] = 1
-            logging.debug(f"TABLE {table}")
         return table

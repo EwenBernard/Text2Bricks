@@ -11,7 +11,7 @@ def image_upscale(image: Image.Image, scale_factor: int) -> Image.Image:
     return image.resize(new_size, resample=Image.NEAREST)
 
 
-def IoU(image1: np.array, image2: np.array) -> int:
+def IoU(image1: np.array, image2: np.array) -> float:
     intersection = np.logical_and(image1, image2).sum()
     union = np.logical_or(image1, image2).sum()
 
