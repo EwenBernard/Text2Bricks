@@ -8,6 +8,10 @@ class AbstractLegoWorldData(BaseModel, ABC):
     world : List[Brick] = Field(default_factory=list, description="List of bricks in the world")
     valid_bricks : Set[int] = Field(default_factory=set, description="Set of valid brick types")
     dimensions : Tuple[int, int, int] = Field(..., description="Dimensions of the Lego world (x, y, z)")
+    x_step : int = 10
+    y_step : int = -24
+    z_step : int = 10
+
 
     def __str__(self) -> str:
         return f"Piece Count : {len(self.world)}\n" + "\n".join([brick.coords() for brick in self.world])

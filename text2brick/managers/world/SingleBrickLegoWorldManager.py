@@ -2,6 +2,8 @@ from typing import List
 from text2brick.models import Brick, BrickRef, SingleBrickLegoWorldData
 from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorldManager
 import logging
+import numpy as np
+
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
     def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=True, return_illegal_brick=False) -> None:
@@ -15,7 +17,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         logging.debug(f"Initialized Lego World Manager with {len(self.data.world)} bricks.")
         logging.debug(f"World dimensions : {self.data.dimensions}")
         logging.debug(f"Valid bricks : {self.data.valid_bricks}")
-        logging.debug(f"Illegal Bricks : {self.illegal_bricks}")
+        logging.debug(f"Illegal Bricks : {self.data.illegal_bricks}")
         logging.debug(f"World : {self.data.world}")
 
 
@@ -53,3 +55,23 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
                             visited[y][x + dx] = True
         
         return SingleBrickLegoWorldData(world=world, brick_ref=brick_ref, dimensions=(rows, cols, 1))
+    
+
+    def recreate_table_from_world(self):
+        """
+        Reconstruct a 2D array of 0s and 1s from the world data.
+
+        Returns:
+            np.ndarray: 2D array of 0s and 1s representing the table.
+        """
+        rows, cols, _ = self.data.dimensions
+        table = np.zeros((rows, cols), dtype=np.uint8)  # Create a NumPy array initialized with zeros
+
+        for brick in self.data.world:
+            x_start = int(brick.x / (self.data.brick_ref.w / 2))
+            y_start = rows - 1 - int(-brick.y / self.data.brick_ref.h)  # Reverse the y-index
+            for dx in range(2): 
+                if x_start + dx < cols:
+                    table[y_start, x_start + dx] = 1
+
+        return table

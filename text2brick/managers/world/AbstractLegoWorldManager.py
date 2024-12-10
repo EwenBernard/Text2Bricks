@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
-from text2brick.models import AbstractLegoWorldData, RemoveBrickBehaviorEnum, Brick
+from text2brick.models import AbstractLegoWorldData, RemoveBrickBehaviorEnum, Brick, BrickRef
 import logging
 
 
@@ -26,6 +26,28 @@ class AbstractLegoWorldManager(ABC):
         logging.debug(f"Brick {brick.brick_id} is invalid and was not added to the world.")
         return False
     
+
+    def add_brick_to_world_from_coord(self, x, y, brick_ref: BrickRef):
+        """
+        Adds a brick to the LEGO world using its coordinates.
+
+        Args:
+            x (int): The x-coordinate of the brick in the LEGO world.
+            y (int): The y-coordinate of the brick in the LEGO world.
+            brick_ref (BrickRef): Reference object containing brick properties (e.g., dimensions, color).
+
+        Returns:
+            bool: True if the brick was successfully added, False otherwise.
+        """
+        if len(self.data.world) != 0:
+            id = self.data.world[-1].brick_id + 1 
+        else:
+            id = 1 
+
+        brick = Brick(brick_id=id, x=x, y=y, z=0, brick_ref=brick_ref)
+        return self.add_brick_to_world(brick)
+
+
 
     def remove_brick_from_world(self, brick: Brick, rm_behavior: RemoveBrickBehaviorEnum = RemoveBrickBehaviorEnum.SKIP_IF_ILLEGAL) -> bool:
         """
