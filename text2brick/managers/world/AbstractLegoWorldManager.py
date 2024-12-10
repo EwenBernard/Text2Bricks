@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
-from text2brick.models import AbstractLegoWorldData, RemoveBrickBehaviorEnum, Brick
+from typing import List, Optional, Tuple, Union
+from text2brick.models import AbstractLegoWorldData, RemoveBrickBehaviorEnum, Brick, BrickGetterEnum
 import logging
+import copy
 
 
 class AbstractLegoWorldManager(ABC):
@@ -9,25 +10,46 @@ class AbstractLegoWorldManager(ABC):
         self.data : AbstractLegoWorldData
         pass 
 
-    def add_brick_to_world(self, brick: Brick) -> None:
+    def get_brick(self, identifier: Union[Tuple[int,int,int], int], lookup_type: BrickGetterEnum = BrickGetterEnum.COORDS) -> Brick:
+        """
+        Get a brick from the world using a specific getter.
+
+        Args:
+            by (BrickGetterEnum): The getter to use.
+
+        Returns:
+            Brick: The brick found.
+        """
+        if lookup_type == BrickGetterEnum.COORDS:
+            for brick in self.data.world:
+                if brick.x == identifier[0] and brick.y == identifier[1] and brick.z == identifier[2]:
+                    return brick
+        
+        elif lookup_type == BrickGetterEnum.ID:
+             for brick in self.data.world:
+                if brick.brick_id == identifier:
+                    return brick
+
+    def add_brick(self, brick: Brick) -> None:
         """
         Add a brick to the world and update connections.
 
         Args:
             brick (Brick): The brick to add.
         """
-        self.add_brick_connection(brick)
-        if self.check_brick_validity(brick):
-            self.data.world.append(brick)
+        if not self._bricks_overlap(brick, self.data.world):
+            self.add_brick_connection(brick)
 
-            logging.debug(f"Added brick {brick.brick_id} to the world.")
-            return True
-        
+            if self.check_brick_validity(brick):
+                self.data.world.append(brick)
+                logging.debug(f"Added brick {brick.brick_id} to the world.")
+                return True
+            
         logging.debug(f"Brick {brick.brick_id} is invalid and was not added to the world.")
         return False
     
 
-    def remove_brick_from_world(self, brick: Brick, rm_behavior: RemoveBrickBehaviorEnum = RemoveBrickBehaviorEnum.SKIP_IF_ILLEGAL) -> bool:
+    def remove_brick(self, brick: Brick, rm_behavior: RemoveBrickBehaviorEnum = RemoveBrickBehaviorEnum.SKIP_IF_ILLEGAL) -> bool:
         """
         Remove a brick from the world and update connections.
 
@@ -43,11 +65,10 @@ class AbstractLegoWorldManager(ABC):
             return False
 
         # Create a temporary copy of the world for validation
-        temp_world = self.data.model_copy()
-        temp_world.world.remove(brick)
+        temp_world = [b for b in self.data.world if b != brick]
 
         # Check validity of the world after removing the brick
-        invalid_bricks = [b for b in temp_world.world if not self._init_brick_validity(b)]
+        invalid_bricks = [b for b in temp_world if not self._init_brick_validity(b)]
         
         if rm_behavior == RemoveBrickBehaviorEnum.SKIP_IF_ILLEGAL and invalid_bricks:
             logging.debug(f"Brick {brick.brick_id} cannot be removed as it makes the world invalid.")
@@ -138,22 +159,57 @@ class AbstractLegoWorldManager(ABC):
         if brick.brick_id in self.data.valid_bricks:
             return True
 
-        if brick in visited:
+        if brick.brick_id in visited:
             return False
 
         # Check validity for connected bricks
-        visited.add(brick)
+        visited.add(brick.brick_id)
         if brick.y == 0 or any(conn.brick_id in self.data.valid_bricks for conn in brick.connected_to):
             self.data.valid_bricks.add(brick.brick_id)
             queue = [brick]
             while queue:
                 current_brick = queue.pop(0)
                 for conn in current_brick.connected_to:
-                    if conn not in visited:
-                        visited.add(conn)
+                    if conn.brick_id not in visited:
+                        visited.add(conn.brick_id)
                         queue.append(conn)
             return True
 
+        return False
+    
+
+    def _brick_overlap(self, brick1: Brick, brick2: Brick) -> bool:
+        """
+        Check if two bricks overlap based on their positions and dimensions.
+
+        Args:
+            brick1 (Brick): The first brick.
+            brick2 (Brick): The second brick.
+
+        Returns:
+            bool: True if the bricks overlap, False otherwise.
+        """
+        # Assuming bricks have attributes `x`, `y`, `z`, `width`, `height`, and `depth`
+        overlap_x = (brick1.x < brick2.x + brick2.brick_ref.w) and (brick1.x + brick1.brick_ref.w > brick2.x)
+        overlap_y = (brick1.y < brick2.y + brick2.brick_ref.h) and (brick1.y + brick1.brick_ref.h > brick2.y)
+        overlap_z = (brick1.z < brick2.z + brick2.brick_ref.d) and (brick1.z + brick1.brick_ref.d > brick2.z)
+        return overlap_x and overlap_y and overlap_z
+
+
+    def _bricks_overlap(self, brick: Brick, world: List[Brick]) -> bool:
+        """
+        Check if a brick overlaps with any other bricks in the world.
+
+        Args:
+            brick (Brick): The brick to check.
+            world (list of Brick): List of all bricks in the world.
+
+        Returns:
+            bool: True if the brick overlaps with any other bricks, False otherwise.
+        """
+        for other_brick in world:
+            if self._brick_overlap(brick, other_brick):
+                return True
         return False
 
 
@@ -186,7 +242,7 @@ class AbstractLegoWorldManager(ABC):
             logging.debug(f"Removing illegal bricks from the world.") 
             for brick in data.world:
                 if brick.brick_id not in data.valid_bricks:
-                    self.remove_brick_from_world(brick)
+                    self.remove_brick(brick)
 
         if return_illegal_bricks:
             illegal_bricks = set()
@@ -214,3 +270,15 @@ class AbstractLegoWorldManager(ABC):
         """
         pass
     
+    @abstractmethod
+    def create_table_from_world(self, brick_world : AbstractLegoWorldData) -> List[List[int]]:
+        """
+        Converts a LEGO brick world back into a 2D mapping array.
+
+        Args:
+            brick_world (list of Brick): List of Brick objects representing the LEGO world.
+            world_dimension (tuple): Dimensions of the world as (rows, cols, height). Defaults to (10, 10, 1).
+
+        Returns:
+            list of list of int: array where 1 represents a stud and 0 represents empty space.
+        """

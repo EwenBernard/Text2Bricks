@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator, ValidationError
 from typing import List
+from .Constants import BRICK_UNIT
 
 
 class BrickRef(BaseModel):
@@ -16,6 +17,9 @@ class BrickRef(BaseModel):
 
     def shape(self):
         return (self.h, self.w, self.d)
+    
+    def convert_to_unit(self):
+        return (self.h * BRICK_UNIT.H, self.w * BRICK_UNIT.W, self.d * BRICK_UNIT.D)
     
 
 class Brick(BaseModel):
@@ -73,4 +77,3 @@ class Brick(BaseModel):
     
     def coords(self):
         return f"x: {self.x} | y: {self.y} | z: {self.z}"
-    
