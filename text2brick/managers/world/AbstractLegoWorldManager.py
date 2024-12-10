@@ -8,6 +8,7 @@ class AbstractLegoWorldManager(ABC):
         self.data : AbstractLegoWorldData
         pass 
 
+
     def get_brick(self, identifier: Union[Tuple[int,int,int], int], lookup_type: BrickGetterEnum = BrickGetterEnum.COORDS) -> Brick:
         """
         Get a brick from the world using a specific getter.
@@ -28,6 +29,7 @@ class AbstractLegoWorldManager(ABC):
                 if brick.brick_id == identifier:
                     return brick
 
+
     def add_brick(self, brick: Brick) -> None:
         """
         Add a brick to the world and update connections.
@@ -47,7 +49,7 @@ class AbstractLegoWorldManager(ABC):
         return False
 
 
-    def add_brick_to_world_from_coord(self, x, y, brick_ref: BrickRef):
+    def add_brick_from_coord(self, x, y, brick_ref: BrickRef):
         """
         Adds a brick to the LEGO world using its coordinates.
 
@@ -65,7 +67,7 @@ class AbstractLegoWorldManager(ABC):
             id = 1 
 
         brick = Brick(brick_id=id, x=x, y=y, z=0, brick_ref=brick_ref)
-        return self.add_brick_to_world(brick)
+        return self.add_brick(brick)
 
 
     def remove_brick(self, brick: Brick, rm_behavior: RemoveBrickBehaviorEnum = RemoveBrickBehaviorEnum.SKIP_IF_ILLEGAL) -> bool:
