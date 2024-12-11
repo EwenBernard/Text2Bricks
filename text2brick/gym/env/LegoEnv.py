@@ -5,7 +5,7 @@ import numpy as np
 from text2brick.managers.world.SingleBrickLegoWorldManager import SingleBrickLegoWorldManager
 from text2brick.models import BrickRef, BRICK_UNIT
 from text2brick.models import BrickGetterEnum
-from text2brick.gym import IoUValidityRewardFunc, AbstractRewardFunc
+from text2brick.gym.components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
 
 class LegoEnv(gym.Env):
 
