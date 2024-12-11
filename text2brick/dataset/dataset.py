@@ -24,8 +24,6 @@ class Dataset:
         fetch_openml_cached = memory.cache(fetch_openml)
         mnist = fetch_openml_cached('mnist_784', version=1) 
 
-        #mnist = fetch_openml('mnist_784', version=1, data_home=self.cache_dir)  # Load MNIST dataset
-
         self.data = mnist.data  # 70000 samples, each with 784 features (28x28 pixels flattened)
         self.labels = mnist.target  # Corresponding labels for the dataset
 
