@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 import logging
 from typing import Tuple
+import os
+from joblib import Memory
 
 from text2brick.utils.ImageUtils import array_to_image
 
@@ -13,11 +15,16 @@ class Dataset:
     and modifying samples by truncating rows or columns.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, cache_dir: str = './tmp') -> None:
         """
         Initializes the Dataset by loading the MNIST data from OpenML.
         """
-        mnist = fetch_openml('mnist_784', version=1)  # Load MNIST dataset
+
+        memory = Memory(cache_dir)
+        fetch_openml_cached = memory.cache(fetch_openml)
+        mnist = fetch_openml_cached('mnist_784', version=1) 
+
+        #mnist = fetch_openml('mnist_784', version=1, data_home=self.cache_dir)  # Load MNIST dataset
 
         self.data = mnist.data  # 70000 samples, each with 784 features (28x28 pixels flattened)
         self.labels = mnist.target  # Corresponding labels for the dataset
