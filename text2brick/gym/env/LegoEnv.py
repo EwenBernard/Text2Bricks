@@ -4,6 +4,7 @@ import numpy as np
 
 from text2brick.managers.world.SingleBrickLegoWorldManager import SingleBrickLegoWorldManager
 from text2brick.models import BrickRef, BRICK_UNIT
+from text2brick.models import BrickGetterEnum
 from text2brick.gym import IoUValidityRewardFunc, AbstractRewardFunc
 
 class LegoEnv(gym.Env):
@@ -50,15 +51,9 @@ class LegoEnv(gym.Env):
         """
         # Add brick to world
         row, col = action
-        x = col * self.lego_world.data.x_step
-        y = (self.size - 1 - row) * self.lego_world.data.y_step
+        x = col 
+        y = self.size - 1 - row
         is_brick_valid = self.lego_world.add_brick_from_coord(x, y, self.lego_world.data.brick_ref)
-        
-        # Reward
-        if is_brick_valid:
-            reward = 1
-        else:
-            reward = -1
         lego_world_array = self.lego_world.recreate_table_from_world()
         reward = self.reward_func(model, lego_world_array, is_brick_valid)
 
@@ -66,8 +61,6 @@ class LegoEnv(gym.Env):
 
         done = False
         info = {
-            "validity" : is_brick_valid,
-            "IoU" : iou,
             "reward" : reward,
             "steps" : self.n_step,
             "brick" : self.lego_world.get_brick((x, y, 0), BrickGetterEnum.COORDS)
