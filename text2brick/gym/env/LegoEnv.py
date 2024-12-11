@@ -12,6 +12,7 @@ class LegoEnv(gym.Env):
 
         self.size = size
         self.alpha = 0.5
+        self.n_step = 0
 
         # Observation space: binary grid of shape (size, size)
         self.observation_space = spaces.MultiBinary([size, size])
@@ -37,28 +38,39 @@ class LegoEnv(gym.Env):
         self.current_state = np.zeros((self.size, self.size), dtype=int)
         return self.current_state
 
+
     def step(self, action, model: np.array):
         """
         Place a 1 in the grid at the given (x, y) coordinate.
         Args:
             action (tuple): A pair of integers (row, col) specifying the cell to update.
+            model: To compare the observation
         Returns:
             tuple: (observation, reward, done, info)
         """
         # Add brick to world
         row, col = action
-        x = col
-        y = (self.size - 1 - row)
+        x = col * self.lego_world.data.x_step
+        y = (self.size - 1 - row) * self.lego_world.data.y_step
         is_brick_valid = self.lego_world.add_brick_from_coord(x, y, self.lego_world.data.brick_ref)
-
+        
+        # Reward
+        if is_brick_valid:
+            reward = 1
+        else:
+            reward = -1
         lego_world_array = self.lego_world.recreate_table_from_world()
         reward = self.reward_func(model, lego_world_array, is_brick_valid)
 
+        self.n_step += 1
+
         done = False
-        info = {}
+        info = {
+            "validity" : is_brick_valid,
+            "IoU" : iou,
+            "reward" : reward,
+            "steps" : self.n_step,
+            "brick" : self.lego_world.get_brick((x, y, 0), BrickGetterEnum.COORDS)
+        }
 
         return lego_world_array, reward, done, info
-    
-
-    def action_validity(self, action):
-        pass

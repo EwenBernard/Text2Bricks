@@ -8,6 +8,7 @@ class AbstractLegoWorldManager(ABC):
         self.data : AbstractLegoWorldData
         pass 
 
+
     def get_brick(self, identifier: Union[Tuple[int,int,int], int], lookup_type: BrickGetterEnum = BrickGetterEnum.COORDS) -> Brick:
         """
         Get a brick from the world using a specific getter.
@@ -27,6 +28,7 @@ class AbstractLegoWorldManager(ABC):
              for brick in self.data.world:
                 if brick.brick_id == identifier:
                     return brick
+
 
     def add_brick(self, brick: Brick) -> None:
         """
