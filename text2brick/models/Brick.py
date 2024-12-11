@@ -30,11 +30,11 @@ class Brick(BaseModel):
     brick_ref: BrickRef
     connected_to: List[BrickRef] = []
 
-    @field_validator("y")
-    def check_y_dimension(cls, v):
-        if v > 0:
-            raise ValidationError("The 'y' dimension must be inferior or equal to 0.")
-        return v
+    # @field_validator("y")
+    # def check_y_dimension(cls, v):
+    #     if v > 0:
+    #         raise ValidationError("The 'y' dimension must be inferior or equal to 0.")
+    #     return v
 
     def __str__(self):
         return f"id: {self.brick_id} x: {self.x} | y: {self.y} | z: {self.z} | {self.brick_ref} | Connected to: {[brick.brick_id for brick in self.connected_to]}"

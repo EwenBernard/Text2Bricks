@@ -67,13 +67,11 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
             np.ndarray: 2D array of 0s and 1s representing the table.
         """
         rows, cols, _ = self.data.dimensions
-        table = np.zeros((rows, cols), dtype=np.uint8)  # Create a NumPy array initialized with zeros
+        table = np.zeros((rows, cols), dtype=np.uint8)
 
         for brick in self.data.world:
-            x_start = int(brick.x / (brick.brick_ref.w / 2))
-            y_start = rows - 1 - int(-brick.y / self.data.brick_ref.h)  # Reverse the y-index
+            y_start = rows - 1 + int(brick.y / self.data.brick_ref.h)
             for dx in range(2): 
-                if x_start + dx < cols:
-                    table[y_start, x_start + dx] = 1
-
+                if brick.x + dx < cols:
+                    table[y_start, brick.x + dx] = 1
         return table
