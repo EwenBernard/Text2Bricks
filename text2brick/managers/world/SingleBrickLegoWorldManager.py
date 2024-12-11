@@ -70,7 +70,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         table = np.zeros((rows, cols), dtype=np.uint8)
 
         for brick in self.data.world:
-            y_start = rows - 1 + int(brick.y / self.data.brick_ref.h)
+            y_start = rows - 1 - int(brick.y / self.data.brick_ref.h)
             for dx in range(2): 
                 if brick.x + dx < cols:
                     table[y_start, brick.x + dx] = 1
