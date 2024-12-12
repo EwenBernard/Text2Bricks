@@ -1,9 +1,7 @@
 from PIL import Image
 import numpy as np
 from sklearn.datasets import fetch_openml
-import logging
 from typing import Tuple
-import os
 from joblib import Memory
 
 from text2brick.utils.ImageUtils import array_to_image

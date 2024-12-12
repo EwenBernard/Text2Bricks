@@ -1,13 +1,13 @@
 import torch
 from torch import nn
 from torchvision import transforms
-from PIL import Image
-from text2brick.utils.ImageUtils import array_to_image
+import matplotlib.pyplot as plt
 
 #https://pytorch.org/vision/main/models/generated/torchvision.models.squeezenet1_0.html
 
 
 class CNN(nn.Module):
+
     def __init__(self):
         super().__init__()
 
@@ -24,6 +24,7 @@ class CNN(nn.Module):
         self.model.eval()
         self.model = nn.Sequential(*list(self.model.features.children())[:13])
         self.layers = self.model.children
+        self.parameters = sum(p.numel() for p in self.model.parameters())
 
 
     def forward(self, image):
@@ -51,4 +52,49 @@ class CNN(nn.Module):
         with torch.no_grad():
             output = self.model(input_batch)
 
-        return output
+        return output.squeeze(0)
+
+
+    def feature_map_channel(self, features, channel_index):
+        """
+        Visualizes a single channel from the feature map.
+
+        Args:
+            features (torch.Tensor): Feature map tensor of shape [C, H, W].
+            channel_index (int): Index of the channel to visualize.
+        """
+        features = features.permute(1, 2, 0)
+        # Check if the channel index is valid
+        if channel_index < 0 or channel_index >= features.shape[0]:
+            raise ValueError(f"Invalid channel_index {channel_index}. Must be between 0 and {features.shape[0] - 1}.")
+
+        # Normalize the selected channel for visualization
+        features_normalized = (features - features.min()) / (features.max() - features.min())
+
+        # Plot the channel
+        fig, axe = plt.subplots(1, 1, figsize=(15, 5))
+        axe.imshow(features_normalized[..., channel_index], cmap='viridis')
+        axe.set_title(f"Channel {channel_index + 1}")
+        plt.show()
+        
+    
+    def feature_map(self, features):
+        """
+        Visualizes the combined feature map by averaging across all channels.
+
+        Args:
+            features (torch.Tensor): Feature map tensor of shape [H, W, C], where:
+                                    H - height of the feature map,
+                                    W - width of the feature map,
+                                    C - number of channels.
+        """
+        features = features.permute(1, 2, 0)
+        combined_features = features.mean(dim=2)
+        features_normalized = (combined_features - combined_features.min()) / (combined_features.max() - combined_features.min())
+
+        fig, axe = plt.subplots(1, 1, figsize=(15, 5))
+        axe.imshow(features_normalized, cmap='viridis')
+        axe.set_title(f"Feature map (all channels combined)")
+        plt.show()
+
+    
