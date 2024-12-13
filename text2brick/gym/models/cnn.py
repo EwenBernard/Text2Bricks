@@ -45,6 +45,7 @@ class CNN(nn.Module):
 
         # Move the input and model to the GPU if available
         if torch.cuda.is_available():
+            print("yes")
             input_batch = input_batch.to('cuda')
             self.model.to('cuda')
         
@@ -96,5 +97,3 @@ class CNN(nn.Module):
         axe.imshow(features_normalized, cmap='viridis')
         axe.set_title(f"Feature map (all channels combined)")
         plt.show()
-
-    
