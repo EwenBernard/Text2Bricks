@@ -21,6 +21,8 @@ Natural Language Input → Diffusion Model (3D Shape) → Text2Brick RL Model (G
 ### Objective
 Rebuild MNIST digits in LEGO LDRAW format. This simplified approach focuses on 2D reconstruction (ignoring the z-dimension) to reduce complexity in the initial stages of the project.
 
+![POC Target Example](images/Reconstruction_Example.png)
+
 ### Reinforcement Learning Model Pipeline
 #### Observations
 1. **Target Image**: MNIST digit to rebuild.
