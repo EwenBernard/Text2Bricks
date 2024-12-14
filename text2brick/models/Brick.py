@@ -15,6 +15,14 @@ class BrickRef(BaseModel):
     def __str__(self):
         return f"ID: {self.file_id} | Name: {self.name} | Color: {self.color} | h:{self.h} | w:{self.w} | d:{self.d}"
 
+    def __eq__(self, other):
+        if isinstance(other, BrickRef):
+            return (self.file_id, self.name, self.color, self.h, self.w, self.d) == (other.file_id, other.name, other.color, other.h, other.w, other.d)
+        return False
+
+    def __hash__(self):
+        return hash((self.file_id, self.name, self.color, self.h, self.w, self.d))
+
     def shape(self):
         return (self.h, self.w, self.d)
     
@@ -23,6 +31,7 @@ class BrickRef(BaseModel):
     
 
 class Brick(BaseModel):
+    #TODO change brickref to brick
     brick_id : int
     x: int
     y: int
@@ -38,6 +47,11 @@ class Brick(BaseModel):
 
     def __str__(self):
         return f"id: {self.brick_id} x: {self.x} | y: {self.y} | z: {self.z} | {self.brick_ref} | Connected to: {[brick.brick_id for brick in self.connected_to]}"
+    
+    def __eq__(self, other):
+        if isinstance(other, Brick):
+            return (self.brick_id, self.x, self.y, self.z, self.brick_ref) == (other.x, other.y, other.z, other.brick_ref)
+        return False
     
     def is_connected_to(self, other_brick):
         """

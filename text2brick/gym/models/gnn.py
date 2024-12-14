@@ -4,11 +4,19 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric.data import Data
 
+#GCN -> Graph Convolutional Network  
+#https://jonathan-hui.medium.com/graph-convolutional-networks-gcn-pooling-839184205692
+#https://arxiv.org/pdf/1901.00596
+#https://arxiv.org/pdf/1609.02907
+
+#-> need to predict graph new node at the end 
+#-> We can predict x,y coords, ok for simple bricks but Not scalable for large lego piece pool.
+
+
 class GNN(nn.Module):
     def __init__(self, in_channels, out_channels, hidden_channels=64):
         super(GNN, self).__init__()
         
-
         # Define the layers: GCNConv layers for graph convolution
         self.conv1 = GCNConv(in_channels, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, out_channels)

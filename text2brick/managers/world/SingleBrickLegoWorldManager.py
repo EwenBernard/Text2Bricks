@@ -11,7 +11,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         self.data : SingleBrickLegoWorldData = self._create_world_from_table(table, brick_ref, world_dimension=world_dimension)
 
         if self.data.world:
-            self._init_bricks_connections()
+            self._init_bricks_connections(self.data)
             #illegal brick data here ? 
             self.data.illegal_bricks = self._init_world_validity(self.data, remove_illegal_bricks=remove_illegal_brick_init, return_illegal_bricks=return_illegal_brick)
 
@@ -51,8 +51,9 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
                         table[y][x + dx] == 1 and not visited[y][x + dx]
                         for dx in range(2)
                     ):
+                        print(f"Creating brick {brick_id} at ({x}, {y})")
+                        world.append(Brick(x=x * brick_ref.w / 2, y=height_multiplier * brick_ref.h, z=0, brick_ref=brick_ref, brick_id=brick_id))
                         brick_id += 1
-                        world.append(Brick(x=x * brick_ref.w / 2, y=-height_multiplier * brick_ref.h, z=0, brick_ref=brick_ref, brick_id=brick_id))
                         for dx in range(2):
                             visited[y][x + dx] = True
         
@@ -67,8 +68,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
             np.ndarray: 2D array of 0s and 1s representing the table.
         """
         rows, cols, _ = self.data.dimensions
-        table = np.zeros((rows, cols), dtype=np.uint8)
-
+        table = np.zeros((rows, cols), dtype=np.uint8) 
         for brick in self.data.world:
             y_start = rows - 1 - int(brick.y / self.data.brick_ref.h)
             for dx in range(2): 

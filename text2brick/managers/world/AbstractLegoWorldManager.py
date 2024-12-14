@@ -38,7 +38,7 @@ class AbstractLegoWorldManager(ABC):
             brick (Brick): The brick to add.
         """
         if not self._bricks_overlap(brick, self.data.world):
-            self.add_brick_connection(brick)
+            self.add_brick_connection(self.data.world, brick)
 
             if self.check_brick_validity(brick):
                 self.data.world.append(brick)
@@ -64,7 +64,7 @@ class AbstractLegoWorldManager(ABC):
         if self.data.world:
             id = self.data.world[-1].brick_id + 1 
         else:
-            id = 1 
+            id = 0
 
         brick = Brick(brick_id=id, x=x, y=y, z=0, brick_ref=brick_ref)
         return self.add_brick(brick)
@@ -88,36 +88,35 @@ class AbstractLegoWorldManager(ABC):
         # Create a temporary copy of the world for validation
         temp_world = [b for b in self.data.world if b != brick]
 
-        # Check validity of the world after removing the brick
-        invalid_bricks = [b for b in temp_world if not self._init_brick_validity(b)]
-        
+        temp_world = AbstractLegoWorldData(world=temp_world, brick_ref=self.data.brick_ref, dimensions=self.data.dimensions)
+        self._init_bricks_connections(temp_world)
+        invalid_bricks = self._init_world_validity(temp_world, remove_illegal_bricks=False, return_illegal_bricks=True)
+
         if rm_behavior == RemoveBrickBehaviorEnum.SKIP_IF_ILLEGAL and invalid_bricks:
             logging.debug(f"Brick {brick.brick_id} cannot be removed as it makes the world invalid.")
             return False
 
-        # Update connections
+        # Update other bricks connections and delete brick
         self._update_brick_connections(brick)
-        
-        # Remove the brick
-        self.data.world.remove(brick)
-        self.data.valid_bricks.discard(brick.brick_id)
+        self._delete_brick_from_data(brick)
 
         # Remove invalid bricks if specified
         if rm_behavior == RemoveBrickBehaviorEnum.REMOVE_AND_CLEAN:
-            self._remove_invalid_bricks(invalid_bricks)
+            for brick in invalid_bricks:
+                self._delete_brick_from_data(brick)
 
         logging.debug(f"Removed brick {brick.brick_id} from the world.")
         return True
 
 
-    def add_brick_connection(self, brick: Brick) -> None:
+    def add_brick_connection(self, world: List[Brick], brick: Brick) -> None:
         """
         Add a brick to the world and update connections.
 
         Args:
             brick (Brick): The brick to add.
         """
-        for other_brick in self.data.world: 
+        for other_brick in world: 
             if brick != other_brick:
                 brick.add_connection(other_brick)
 
@@ -150,19 +149,18 @@ class AbstractLegoWorldManager(ABC):
                 other_brick.connected_to.remove(brick)
 
 
-    def _remove_invalid_bricks(self, invalid_bricks: List[Brick]) -> None:
+    def _delete_brick_from_data(self, brick: Brick) -> None:
         """
-        Remove all invalid bricks from the world.
+        Remove all brick from the world.
         
         Args:
-            invalid_bricks (list of Brick): List of invalid bricks to remove.
+            brick: brick to remove.
         """
-        for brick in invalid_bricks:
-            self.data.world.remove(brick)
-            self.data.valid_bricks.discard(brick.brick_id)
+        self.data.world.remove(brick)
+        self.data.valid_bricks.discard(brick.brick_id)
     
 
-    def _init_brick_validity(self, brick: Brick, visited=None) -> bool:
+    def _init_brick_validity(self, data: AbstractLegoWorldData, brick: Brick, visited=None) -> bool:
         """
         Initialize the validity of a brick and its connections using bread-first search.
         
@@ -176,8 +174,7 @@ class AbstractLegoWorldManager(ABC):
         if visited is None:
             visited = set()
 
-        # Early exit if already valid
-        if brick.brick_id in self.data.valid_bricks:
+        if brick.brick_id in data.valid_bricks:
             return True
 
         if brick.brick_id in visited:
@@ -185,12 +182,14 @@ class AbstractLegoWorldManager(ABC):
 
         # Check validity for connected bricks
         visited.add(brick.brick_id)
-        if brick.y == 0 or any(conn.brick_id in self.data.valid_bricks for conn in brick.connected_to):
-            self.data.valid_bricks.add(brick.brick_id)
+        if brick.y == 0:
+            data.valid_bricks.add(brick.brick_id)
             queue = [brick]
             while queue:
                 current_brick = queue.pop(0)
                 for conn in current_brick.connected_to:
+                    if conn.brick_id in data.valid_bricks:
+                        data.valid_bricks.add(current_brick.brick_id)
                     if conn.brick_id not in visited:
                         visited.add(conn.brick_id)
                         queue.append(conn)
@@ -210,7 +209,6 @@ class AbstractLegoWorldManager(ABC):
         Returns:
             bool: True if the bricks overlap, False otherwise.
         """
-        # Assuming bricks have attributes `x`, `y`, `z`, `width`, `height`, and `depth`
         overlap_x = (brick1.x < brick2.x + brick2.brick_ref.w) and (brick1.x + brick1.brick_ref.w > brick2.x)
         overlap_y = (brick1.y < brick2.y + brick2.brick_ref.h) and (brick1.y + brick1.brick_ref.h > brick2.y)
         overlap_z = (brick1.z < brick2.z + brick2.brick_ref.d) and (brick1.z + brick1.brick_ref.d > brick2.z)
@@ -234,15 +232,15 @@ class AbstractLegoWorldManager(ABC):
         return False
 
 
-    def _init_bricks_connections(self) -> None:
+    def _init_bricks_connections(self, data: AbstractLegoWorldData) -> None:
         """
         Initializes the connections between bricks in the world.
 
         Args:
             world (list of Brick): List of all bricks.
         """
-        for brick in self.data.world:
-           self.add_brick_connection(brick)
+        for brick in data.world:
+           self.add_brick_connection(data.world, brick)
 
 
     def _init_world_validity(self, data: AbstractLegoWorldData, remove_illegal_bricks=True, return_illegal_bricks=False) -> Optional[List[Tuple[Brick, str]]]:
@@ -257,7 +255,7 @@ class AbstractLegoWorldManager(ABC):
         """
         
         for brick in data.world:
-            self._init_brick_validity(brick)
+            self._init_brick_validity(data, brick)
 
         if remove_illegal_bricks:
             logging.debug(f"Removing illegal bricks from the world.") 
@@ -266,13 +264,13 @@ class AbstractLegoWorldManager(ABC):
                     self.remove_brick(brick)
 
         if return_illegal_bricks:
-            illegal_bricks = set()
+            illegal_bricks = []
             for brick in data.world:
                 if brick.brick_id not in data.valid_bricks:
-                    if brick.y < 0:
-                        illegal_bricks.add((brick, "Floating brick - no connection or connected to illegal brick"))
-                    elif brick.y > 0:
-                        illegal_bricks.add((brick, "Brick above ground level"))
+                    if brick.y > 0:
+                        illegal_bricks.append((brick, "Floating brick - no connection or connected to illegal brick"))
+                    elif brick.y < 0:
+                        illegal_bricks.append((brick, "Brick above ground level"))
             logging.debug(f"Found {len(illegal_bricks)} illegal bricks in the world :\n{illegal_bricks}")
         
             return illegal_bricks

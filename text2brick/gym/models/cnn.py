@@ -11,6 +11,7 @@ class CNN(nn.Module):
     def __init__(self):
         super().__init__()
 
+        #Preprocess the MNIST Dataset images
         self.preprocess = transforms.Compose([
             transforms.Resize(256),  # Resize the shorter side of the image to 256 pixels
             transforms.CenterCrop(224),  # Crop the center to 224x224, the required input size for SqueezeNet
