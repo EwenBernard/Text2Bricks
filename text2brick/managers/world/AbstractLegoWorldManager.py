@@ -37,7 +37,7 @@ class AbstractLegoWorldManager(ABC):
         Args:
             brick (Brick): The brick to add.
         """
-        if not self._bricks_overlap(brick, self.data.world):
+        if not self._check_bricks_overlap_in_world(brick, self.data.world):
             self.add_brick_connection(self.data.world, brick)
 
             if self.check_brick_validity(brick):
@@ -215,7 +215,7 @@ class AbstractLegoWorldManager(ABC):
         return overlap_x and overlap_y and overlap_z
 
 
-    def _bricks_overlap(self, brick: Brick, world: List[Brick]) -> bool:
+    def _check_bricks_overlap_in_world(self, brick: Brick, world: List[Brick]) -> bool:
         """
         Check if a brick overlaps with any other bricks in the world.
 
