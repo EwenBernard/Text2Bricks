@@ -105,9 +105,7 @@ class Dataset:
 
         # Identify and separate all-zero rows and non-zero rows to place all-zero rows at the top
         zero_rows = np.all(image == 0, axis=1)
-        non_zero_rows = image[~zero_rows]
-        zero_rows_only = image[zero_rows]
-        image = np.vstack((zero_rows_only, non_zero_rows))
+        image = np.vstack((image[zero_rows], image[~zero_rows]))
 
         # Convert the grayscale image into binary (0 or 1)
         return np.where(image > 0, 1, 0).astype(np.uint8)
