@@ -1,4 +1,4 @@
-# Text2Bricks Project
+# Text2Bricks : Transform Text to Buildable Lego Set
 
 ## Overview
 The Text2Bricks project aims to create buildable LEGO sets in the 3D LEGO representation format (LDRAW) based on natural language input. This involves using a diffusion model to generate a 3D shape from the input and reinforcement learning (RL) to construct the LEGO set based on the generated shape.
