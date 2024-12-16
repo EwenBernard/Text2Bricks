@@ -82,7 +82,10 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         Converts the world data to a tensor representation.
 
         Returns:
-            torch.Tensor: Tensor representation of the world data.
+            Tuple(torch.Tensor, torch.Tensor): Tuple containing:
+                - Tensor representation of the world data. shape(num_bricks, 2)
+                - Edge index tensor representing the connections between bricks. shape(2, num_connections)
+                
         """
         node_features = []
         edge_index = []
