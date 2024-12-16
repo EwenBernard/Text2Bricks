@@ -23,9 +23,20 @@ class PositionHead3D(nn.Module):
             nn.Linear(128, grid_size[2])  # Classification logits for z-axis
         )
 
-        x_logits = self.position_x(mlp_output_dim)
-        y_logits = self.position_y(mlp_output_dim)
-        z_logits = self.position_z(mlp_output_dim)
+
+    def forward(self, mlp_output):
+        """
+        Forward pass for position prediction.
+        
+        Args:
+            mlp_output (Tensor): Fused embeddings of shape [batch_size, mlp_output_dim].
+        
+        Returns:
+            Tensor: Predicted grid positions of shape [batch_size, 2] (x, y).
+        """
+        x_logits = self.position_x(mlp_output)
+        y_logits = self.position_y(mlp_output)
+        z_logits = self.position_z(mlp_output)
         x = torch.argmax(x_logits, dim=-1)  # Predicted x index
         y = torch.argmax(y_logits, dim=-1)  # Predicted y index
         z = torch.argmax(z_logits, dim=-1)  # Predicted z index
@@ -48,8 +59,23 @@ class PositionHead2D(nn.Module):
             nn.Linear(128, grid_size[1])  # Classification logits for y-axis
         )
 
-        x_logits = self.position_x(mlp_output_dim)
-        y_logits = self.position_y(mlp_output_dim)
+    def forward(self, mlp_output):
+        """
+        Forward pass for position prediction.
+        
+        Args:
+            mlp_output (Tensor): Fused embeddings of shape [batch_size, mlp_output_dim].
+        
+        Returns:
+            Tensor: Predicted grid positions of shape [batch_size, 2] (x, y).
+        """
+        # Compute logits for x and y
+        x_logits = self.position_x(mlp_output)
+        y_logits = self.position_y(mlp_output)
+
+        # Predict indices using argmax
         x = torch.argmax(x_logits, dim=-1)  # Predicted x index
         y = torch.argmax(y_logits, dim=-1)  # Predicted y index
-        return torch.stack([x, y], dim=-1) # Combine into 2D position tensor
+
+        # Combine x and y into a single tensor
+        return torch.stack([x, y], dim=-1)
