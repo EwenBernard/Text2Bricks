@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Add prediction to which node the brick will be connected
+
 class PositionHead3D(nn.Module): 
     def __init__(self, mlp_output_dim, grid_size=(10, 10, 10)): 
         super(PositionHead3D, self).__init__()

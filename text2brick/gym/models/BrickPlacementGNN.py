@@ -6,11 +6,12 @@
 #-> need to predict graph new node at the end 
 #-> We can predict x,y coords, ok for simple bricks but Not scalable for large lego piece pool.
 
+# add edge embedding processing in the V2 version
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GATConv
-
+from torch_geometric.nn import GATConv, global_mean_pool
 
 class BrickPlacementGNN(nn.Module):
     def __init__(self, node_feature_dim, edge_feature_dim, hidden_dim, output_dim, num_heads=4):
@@ -45,7 +46,8 @@ class BrickPlacementGNN(nn.Module):
         # Output Layer (to produce latent embeddings for nodes)
         self.output_layer = nn.Linear(hidden_dim, output_dim)
 
-    def forward(self, x, edge_index, edge_attr):
+
+    def forward(self, x, edge_index, edge_attr, batch=None):
         """
         Forward pass for the GNN.
 
@@ -53,9 +55,10 @@ class BrickPlacementGNN(nn.Module):
         - x (Tensor): Node feature matrix of shape [num_nodes, node_feature_dim].
         - edge_index (Tensor): Edge index tensor of shape [2, num_edges], defining graph connectivity.
         - edge_attr (Tensor): Edge feature matrix of shape [num_edges, edge_feature_dim].
+        - batch (Tensor): Batch vector, which assigns each node in the graph to a specific graph in the batch. None if no batch
 
         Returns:
-        - node_embeddings (Tensor): Latent node embeddings of shape [num_nodes, output_dim].
+        - graph_embedding (Tensor): A fixed-size graph-level embedding.
         """
         # GAT Layer 1 with ReLU activation
         x = self.gat1(x, edge_index, edge_attr)
@@ -65,7 +68,10 @@ class BrickPlacementGNN(nn.Module):
         x = self.gat2(x, edge_index, edge_attr)
         x = F.relu(x)
 
-        # Output layer for latent embeddings
+        # Output layer for latent node embeddings
         node_embeddings = self.output_layer(x)
 
-        return node_embeddings
+        # Global mean pooling to aggregate node embeddings to a graph-level embedding
+        graph_embedding = global_mean_pool(node_embeddings, batch)
+
+        return graph_embedding
