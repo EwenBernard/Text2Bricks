@@ -31,22 +31,20 @@ class CNN(nn.Module):
     def forward(self, image):
         """
         Performs the forward pass by preprocessing the input image, running it through the model, 
-        and returning the feature map.
+        and returning the reduced 13x13 feature map.
 
         Args:
             image (PIL.Image or Tensor): The input image to be processed by the model.
             
         Returns:
-            torch.Tensor: The output tensor containing the feature map produced by the model.
+            torch.Tensor: The output tensor containing the reduced 13x13 feature map.
         """
-            
         # Preprocess the input image
         input_tensor = self.preprocess(image)
         input_batch = input_tensor.unsqueeze(0)
 
         # Move the input and model to the GPU if available
         if torch.cuda.is_available():
-            print("yes")
             input_batch = input_batch.to('cuda')
             self.model.to('cuda')
         
@@ -54,47 +52,30 @@ class CNN(nn.Module):
         with torch.no_grad():
             output = self.model(input_batch)
 
-        return output.squeeze(0)
+        # Combine the channels into a 13x13 tensor
+        output_13x13 = output.mean(dim=1)
 
+        return output_13x13.squeeze(0)
 
-    def feature_map_channel(self, features, channel_index):
-        """
-        Visualizes a single channel from the feature map.
-
-        Args:
-            features (torch.Tensor): Feature map tensor of shape [C, H, W].
-            channel_index (int): Index of the channel to visualize.
-        """
-        features = features.permute(1, 2, 0)
-        # Check if the channel index is valid
-        if channel_index < 0 or channel_index >= features.shape[0]:
-            raise ValueError(f"Invalid channel_index {channel_index}. Must be between 0 and {features.shape[0] - 1}.")
-
-        # Normalize the selected channel for visualization
-        features_normalized = (features - features.min()) / (features.max() - features.min())
-
-        # Plot the channel
-        fig, axe = plt.subplots(1, 1, figsize=(15, 5))
-        axe.imshow(features_normalized[..., channel_index], cmap='viridis')
-        axe.set_title(f"Channel {channel_index + 1}")
-        plt.show()
-        
     
     def feature_map(self, features):
         """
-        Visualizes the combined feature map by averaging across all channels.
+        Visualizes the combined feature map.
 
         Args:
-            features (torch.Tensor): Feature map tensor of shape [H, W, C], where:
+            features (torch.Tensor): Feature map tensor of shape [H, W], where:
                                     H - height of the feature map,
-                                    W - width of the feature map,
-                                    C - number of channels.
+                                    W - width of the feature map.
         """
-        features = features.permute(1, 2, 0)
-        combined_features = features.mean(dim=2)
-        features_normalized = (combined_features - combined_features.min()) / (combined_features.max() - combined_features.min())
+        if features.dim() != 2:
+            raise ValueError(f"Expected a 2D tensor [H, W], but got shape {features.shape}")
 
-        fig, axe = plt.subplots(1, 1, figsize=(15, 5))
+        # Normalize the feature map to the range [0, 1]
+        features_normalized = (features - features.min()) / (features.max() - features.min())
+
+        # Plot the feature map
+        fig, axe = plt.subplots(1, 1, figsize=(10, 10))
         axe.imshow(features_normalized, cmap='viridis')
-        axe.set_title(f"Feature map (all channels combined)")
+        axe.set_title("Feature map")
+        axe.axis('off')  # Turn off axes for better visualization
         plt.show()

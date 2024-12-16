@@ -36,10 +36,8 @@ class SNN(nn.Module):
             tuple: (cosine similarity, normalized Euclidean distance) between the target and environment image features.
         """
         self.image_environement = self.cnn.forward(image_environement)
-        similarity = self._cosine_similarity(self.target, self.image_environement)
-        distance = self._distance_euclidean(self.target, self.image_environement)
-        
-        return similarity, distance
+
+        return self.target - self.image_environement
 
 
     def get_features(self):
