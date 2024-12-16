@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GATConv, global_mean_pool
 
 class BrickPlacementGNN(nn.Module):
-    def __init__(self, node_feature_dim, edge_feature_dim, hidden_dim, output_dim, num_heads=4):
+    def __init__(self, node_feature_dim=2, hidden_dim=64, output_dim=64, num_heads=4):
         """
         Parameters:
         - node_feature_dim (int): Dimensionality of node input features (e.g., x, y, z, size, rotation).
@@ -30,7 +30,6 @@ class BrickPlacementGNN(nn.Module):
             in_channels=node_feature_dim,
             out_channels=hidden_dim // num_heads,
             heads=num_heads,
-            edge_dim=edge_feature_dim,
             concat=True
         )
 
@@ -39,7 +38,6 @@ class BrickPlacementGNN(nn.Module):
             in_channels=hidden_dim,
             out_channels=hidden_dim // num_heads,
             heads=num_heads,
-            edge_dim=edge_feature_dim,
             concat=True
         )
 
@@ -47,7 +45,7 @@ class BrickPlacementGNN(nn.Module):
         self.output_layer = nn.Linear(hidden_dim, output_dim)
 
 
-    def forward(self, x, edge_index, edge_attr, batch=None):
+    def forward(self, x, edge_index, batch=None):
         """
         Forward pass for the GNN.
 
@@ -58,20 +56,20 @@ class BrickPlacementGNN(nn.Module):
         - batch (Tensor): Batch vector, which assigns each node in the graph to a specific graph in the batch. None if no batch
 
         Returns:
-        - graph_embedding (Tensor): A fixed-size graph-level embedding.
+        - graph_embedding (Tensor): A fixed-size graph-level embedding size [batch_size, output_dim].
         """
         # GAT Layer 1 with ReLU activation
-        x = self.gat1(x, edge_index, edge_attr)
+        x = self.gat1(x, edge_index)
         x = F.relu(x)
 
         # GAT Layer 2 with ReLU activation
-        x = self.gat2(x, edge_index, edge_attr)
+        x = self.gat2(x, edge_index)
         x = F.relu(x)
 
         # Output layer for latent node embeddings
         node_embeddings = self.output_layer(x)
 
         # Global mean pooling to aggregate node embeddings to a graph-level embedding
-        graph_embedding = global_mean_pool(node_embeddings, batch)
+        graph_embedding = global_mean_pool(node_embeddings, batch) # shape: [batch_size, output_dim]
 
         return graph_embedding

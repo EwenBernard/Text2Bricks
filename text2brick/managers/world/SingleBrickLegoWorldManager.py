@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from text2brick.models import Brick, BrickRef, SingleBrickLegoWorldData
 from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorldManager
 import logging
@@ -77,7 +77,7 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
         return table
     
 
-    def world_2_tensor(self):
+    def world_2_tensor(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Converts the world data to a tensor representation.
 

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from text2brick.models import AbstractLegoWorldData, RemoveBrickBehaviorEnum, Brick, BrickRef, BrickGetterEnum
 import logging
+import torch
 
 class AbstractLegoWorldManager(ABC):
     def __init__(self, table: Optional[List[List[int]]] = [], world_dimension: Tuple[int, int, int]= (10, 10, 1), **kwargs) -> None:
@@ -274,7 +275,18 @@ class AbstractLegoWorldManager(ABC):
             logging.debug(f"Found {len(illegal_bricks)} illegal bricks in the world :\n{illegal_bricks}")
         
             return illegal_bricks
+        
+    @abstractmethod
+    def _world_2_tensor(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Converts the world data to a tensor representation.
 
+        Returns:
+            Tuple(torch.Tensor, torch.Tensor): Tuple containing:
+                - Tensor representation of the world data. shape(num_bricks, nb_features)
+                - Edge index tensor representing the connections between bricks. shape(2, num_connections)
+        """
+        pass
 
     @abstractmethod
     def _create_world_from_table(self, table, world_dimension, **kwargs) -> AbstractLegoWorldData:

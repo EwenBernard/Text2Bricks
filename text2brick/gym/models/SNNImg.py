@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from text2brick.gym.models.cnn import CNN
+from text2brick.gym.models.CNNImg import CNN
 
 # Reference: https://medium.com/@rinkinag24/a-comprehensive-guide-to-siamese-neural-networks-3358658c0513
 
