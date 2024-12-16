@@ -85,6 +85,12 @@ class Brick(BaseModel):
         """
         if self.is_connected_to(other_brick):
             self.connected_to.append(other_brick)
+
+    def get_xy_coords(self):
+        return (self.x, self.y)
+    
+    def get_xyz_coords(self):
+        return (self.x, self.y, self.z)
     
     def shape(self):
         return self.brick_ref.shape()

@@ -3,7 +3,7 @@ from text2brick.models import Brick, BrickRef, SingleBrickLegoWorldData
 from text2brick.managers.world.AbstractLegoWorldManager import AbstractLegoWorldManager
 import logging
 import numpy as np
-
+import torch
 
 class SingleBrickLegoWorldManager(AbstractLegoWorldManager): 
     def __init__(self, table: List[List[int]], brick_ref: BrickRef = None, world_dimension = (10, 10, 1), remove_illegal_brick_init=False, return_illegal_brick=False) -> None:
@@ -75,3 +75,21 @@ class SingleBrickLegoWorldManager(AbstractLegoWorldManager):
                 if brick.x + dx < cols:
                     table[y_start, brick.x + dx] = 1
         return table
+    
+
+    def world_2_tensor(self):
+        """
+        Converts the world data to a tensor representation.
+
+        Returns:
+            torch.Tensor: Tensor representation of the world data.
+        """
+        node_features = []
+        edge_index = []
+        for i, brick in enumerate(self.data.world):
+            node_features.append(brick.get_xy_coords())
+            for j, other_brick in enumerate(self.data.world):
+                if i != j and brick.is_connected_to(other_brick):
+                    edge_index.append([i, j])
+
+        return torch.tensor(node_features, dtype=torch.float), torch.tensor(edge_index, dtype=torch.long).t() # Transpose to get shape [2, num_edges]
