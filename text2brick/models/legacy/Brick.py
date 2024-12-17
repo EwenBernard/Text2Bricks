@@ -1,7 +1,6 @@
 from pydantic import BaseModel, field_validator, ValidationError
 from typing import List
-from .Constants import BRICK_UNIT
-
+from ..Constants import BRICK_UNIT
 
 class BrickRef(BaseModel):
     #TODO use it with lego unit instead of full lenght

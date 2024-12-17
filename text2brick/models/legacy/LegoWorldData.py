@@ -1,7 +1,8 @@
 from abc import ABC
 from pydantic import BaseModel, Field
 from typing import List, Tuple, Set
-from text2brick.models.Brick import Brick, BrickRef
+from text2brick.models.legacy.Brick import Brick, BrickRef
+from networkx import Graph
 
 
 class AbstractLegoWorldData(BaseModel, ABC):
@@ -20,5 +21,3 @@ class AbstractLegoWorldData(BaseModel, ABC):
 class SingleBrickLegoWorldData(AbstractLegoWorldData): 
     brick_ref : BrickRef = Field(..., description="Reference to a specific brick")
     illegal_bricks : Set[Tuple[Brick, str]] = Field(default_factory=set, description="Set of illegal brick types")
-
-    

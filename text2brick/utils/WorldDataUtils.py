@@ -1,4 +1,5 @@
-from text2brick.models import LegoWorldData, BRICK_UNIT
+from text2brick.models import BRICK_UNIT
+from text2brick.models.legacy import LegoWorldData
 
 def format_ldraw(data: LegoWorldData):
         #TODO update to support rotation matrix
