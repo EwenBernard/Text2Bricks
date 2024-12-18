@@ -3,6 +3,8 @@ import torch
 
 class MLP(nn.Module):
 
+    #TODO add reward function output to the concat layer - add +1 to Linear layer and forward params. add to mail model params.
+
     def __init__(self, f_fused_size, h_graph_size, hidden_dims=[128, 64, 32, 16]):
         """
         Initialize the MLP with fixed input sizes for f_fused and h_graph, and customizable hidden layer dimensions.
