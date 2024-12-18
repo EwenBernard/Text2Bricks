@@ -6,7 +6,7 @@ from text2brick.gym.models.SNNImg import SNN
 from torch import nn
 
 class Text2Brick_v1(nn.Module):
-    def __init__(self, image_target, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, gnn_num_heads=4, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
+    def __init__(self, image_target, batch_size=1, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, gnn_num_heads=4, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
         """
         Initializes the text2brick v1.
 
@@ -21,11 +21,9 @@ class Text2Brick_v1(nn.Module):
         """
         super(Text2Brick_v1, self).__init__()
 
-        print("INIT SNN")
         # Define the Siamese Neural Network model for image comparison
         self.snn = SNN(image_target)  # Outputs a 13x13 feature map
         
-        print("INIT GNN")
         # Define the GNN model for graph brick embedding
         self.gnn = BrickPlacementGNN(
             node_feature_dim=gnn_node_feature_dim,
@@ -36,14 +34,14 @@ class Text2Brick_v1(nn.Module):
 
         # Define the MLP for feature fusion and dimensionality reduction
         self.mlp = MLP(
-            f_fused_size=(1, 13, 13),  # The size of the fused feature set ie. CNN Output 13x13
-            h_graph_size=(1, gnn_output_dim),
+            f_fused_size=(batch_size, 13, 13),  # The size of the fused feature set ie. CNN Output 13x13
+            h_graph_size=(batch_size, gnn_output_dim),
             hidden_dims=mlp_hidden_dim
         )
         
         # Define the Position Head for 2D coords prediction
         self.position_head = PositionHead2D(
-            mlp_output_dim=(1, mlp_output_dim),
+            mlp_output_dim=(batch_size, mlp_output_dim),
             grid_size=grid_size
         ) 
         
