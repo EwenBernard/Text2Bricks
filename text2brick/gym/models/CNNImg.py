@@ -55,7 +55,8 @@ class CNN(nn.Module):
         # Combine the channels into a 13x13 tensor
         output_13x13 = output.mean(dim=1)
 
-        return output_13x13.squeeze(0)
+        #return output_13x13.squeeze(0)
+        return output_13x13
 
     
     def feature_map(self, features):
@@ -67,6 +68,10 @@ class CNN(nn.Module):
                                     H - height of the feature map,
                                     W - width of the feature map.
         """
+
+        if features.dim() == 3:
+            features = features.squeeze(0)
+
         if features.dim() != 2:
             raise ValueError(f"Expected a 2D tensor [H, W], but got shape {features.shape}")
 

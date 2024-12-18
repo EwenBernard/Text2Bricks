@@ -1,7 +1,7 @@
-from BrickPlacementGNN import BrickPlacementGNN
-from GNNHead import PositionHead2D
+from text2brick.gym.models.BrickPlacementGNN import BrickPlacementGNN
 from text2brick.gym.models.MLPFusion import MLP
-from SNNImg import SNN
+from text2brick.gym.models.GNNHead import PositionHead2D
+from text2brick.gym.models.SNNImg import SNN
 
 from torch import nn
 
@@ -21,9 +21,11 @@ class Text2Brick_v1(nn.Module):
         """
         super(Text2Brick_v1, self).__init__()
 
+        print("INIT SNN")
         # Define the Siamese Neural Network model for image comparison
         self.snn = SNN(image_target)  # Outputs a 13x13 feature map
         
+        print("INIT GNN")
         # Define the GNN model for graph brick embedding
         self.gnn = BrickPlacementGNN(
             node_feature_dim=gnn_node_feature_dim,
@@ -31,17 +33,17 @@ class Text2Brick_v1(nn.Module):
             output_dim=gnn_output_dim,
             num_heads=gnn_num_heads
         )
-        
+
         # Define the MLP for feature fusion and dimensionality reduction
         self.mlp = MLP(
-            f_fused_size=169,  # The size of the fused feature set ie. CNN Output 13x13
-            h_graph_size=gnn_output_dim,
+            f_fused_size=(1, 13, 13),  # The size of the fused feature set ie. CNN Output 13x13
+            h_graph_size=(1, gnn_output_dim),
             hidden_dims=mlp_hidden_dim
         )
         
         # Define the Position Head for 2D coords prediction
         self.position_head = PositionHead2D(
-            mlp_output_dim=mlp_output_dim,
+            mlp_output_dim=(1, mlp_output_dim),
             grid_size=grid_size
         ) 
         

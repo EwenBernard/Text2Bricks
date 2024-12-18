@@ -300,6 +300,6 @@ class GraphLegoWorldData:
 
     def save_as_ldraw(self, filename: str="test_ldr"):
         with open(filename + ".ldr", "w") as file:
-            for node, data in self.get_nodes():
+            for _, data in self.get_nodes():
                 ldr_line = f"1 15 {data['x'] * BRICK_UNIT.W} {data['y'] * BRICK_UNIT.H} 1 1 0 0 0 1 0 0 0 1 3003.dat"
                 file.write(ldr_line + "\n") 

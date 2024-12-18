@@ -70,6 +70,6 @@ class BrickPlacementGNN(nn.Module):
         node_embeddings = self.output_layer(x)
 
         # Global mean pooling to aggregate node embeddings to a graph-level embedding
-        graph_embedding = global_mean_pool(node_embeddings, batch) # shape: [batch_size, output_dim]
+        graph_embedding = global_mean_pool(node_embeddings, batch) 
 
         return graph_embedding
