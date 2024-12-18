@@ -2,8 +2,7 @@ import gym
 from gym import spaces
 import numpy as np
 
-from text2brick.managers.world.SingleBrickLegoWorldManager import SingleBrickLegoWorldManager
-from text2brick.models import BrickRef, BrickGetterEnum
+from text2brick.models import GraphLegoWorldData
 from text2brick.gym.components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
 
 
@@ -29,7 +28,7 @@ class LegoEnv(gym.Env):
         self.observation_space = spaces.MultiBinary([size, size])
 
         # Define the action space as grid coordinates
-        self.action_space = spaces.MultiDiscrete([size, size - 1])
+        self.action_space = spaces.MultiDiscrete([size - 1, size - 1])
 
         self.reset()
 
@@ -63,13 +62,7 @@ class LegoEnv(gym.Env):
         if not initial_state:
             initial_state = np.zeros((self.size, self.size), dtype=np.uint8)
 
-        # Init lego world
-        brick_ref = BrickRef(file_id="3003.dat", name="2x2", color=15, h=1, w=2, d=2)
-        self.lego_world = SingleBrickLegoWorldManager(
-            table=initial_state.tolist(),
-            brick_ref=brick_ref,
-            world_dimension=(self.size, self.size, 1)
-        )
+        self.lego_world = GraphLegoWorldData(initial_state)
 
 
     def step(self, action, *args, **kwargs):
@@ -85,11 +78,9 @@ class LegoEnv(gym.Env):
             tuple: (observation, reward, done, info)
         """
         row, col = action
-        x = col
-        y = self.size - 1 - row
 
         # Place the brick in the environment
-        is_brick_valid = self.lego_world.add_brick_from_coord(x, y, self.lego_world.data.brick_ref)
+        is_brick_valid = self.lego_world.add_brick(col, row)
         lego_world_array = self.get_obs()
 
         # Compute the reward using the reward function
@@ -98,7 +89,7 @@ class LegoEnv(gym.Env):
         info = {
             "reward": reward,
             "steps": self.n_step,
-            "brick": self.lego_world.get_brick((x, y, 0), BrickGetterEnum.COORDS)
+            "brick": f"{col}, {row}"
         }
         done = False
 
@@ -122,7 +113,7 @@ class LegoEnv(gym.Env):
         Returns:
             numpy.ndarray: Current grid representation.
         """
-        return self.lego_world.recreate_table_from_world()
+        return self.lego_world.graph_to_table()
 
 
     def set_reward_function(self, reward_func: AbstractRewardFunc):

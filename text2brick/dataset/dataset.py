@@ -6,7 +6,7 @@ from joblib import Memory
 from text2brick.utils.ImageUtils import array_to_image
 
 
-class Dataset:
+class MNISTDataset:
     """
     A class to handle MNIST dataset operations, including fetching data, sampling random images, 
     and modifying samples by truncating rows or columns.
