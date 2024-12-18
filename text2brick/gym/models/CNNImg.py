@@ -24,7 +24,9 @@ class CNN(nn.Module):
         self.model = torch.hub.load('pytorch/vision:v0.10.0', 'squeezenet1_0', weights="SqueezeNet1_0_Weights.IMAGENET1K_V1")
         self.model.eval()
         self.model = nn.Sequential(*list(self.model.features.children())[:13])
-        self.layers = self.model.children
+        self.layers = self.model.children()
+        # for i, layer in enumerate(self.model.children()):
+        #     print(f"Layer {i}: {layer}")
         self.parameters = sum(p.numel() for p in self.model.parameters())
 
 
@@ -40,17 +42,21 @@ class CNN(nn.Module):
             torch.Tensor: The output tensor containing the reduced 13x13 feature map.
         """
         # Preprocess the input image
-        input_tensor = self.preprocess(image)
-        input_batch = input_tensor.unsqueeze(0)
+        if isinstance(image, torch.Tensor):
+            input_tensor = image
+        else:
+            input_tensor = self.preprocess(image)  # Preprocess the input image
+            input_tensor = input_tensor.unsqueeze(0)  # Add batch dimension if necessary
+
 
         # Move the input and model to the GPU if available
         if torch.cuda.is_available():
-            input_batch = input_batch.to('cuda')
+            input_tensor = input_tensor.to('cuda')
             self.model.to('cuda')
         
         # Perform inference without computing gradients
         with torch.no_grad():
-            output = self.model(input_batch)
+            output = self.model(input_tensor)
 
         # Combine the channels into a 13x13 tensor
         output_13x13 = output.mean(dim=1)

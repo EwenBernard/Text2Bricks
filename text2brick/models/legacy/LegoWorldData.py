@@ -21,3 +21,4 @@ class AbstractLegoWorldData(BaseModel, ABC):
 class SingleBrickLegoWorldData(AbstractLegoWorldData): 
     brick_ref : BrickRef = Field(..., description="Reference to a specific brick")
     illegal_bricks : Set[Tuple[Brick, str]] = Field(default_factory=set, description="Set of illegal brick types")
+    
