@@ -2,9 +2,11 @@ from typing import List, Tuple
 import networkx as nx
 import torch_geometric
 from torch_geometric.utils.convert import from_networkx
+import torch
 import numpy as np
 from collections import deque
 
+from text2brick.models import BRICK_UNIT
 
 """
 A class representing a LEGO world as a graph where each brick is a node.
@@ -253,6 +255,14 @@ class GraphLegoWorldData:
 
     def edges_num(self):
         return self.graph.number_of_edges()
+    
+
+    def get_nodes(self):
+        return self.graph.nodes(data=True)
+    
+
+    def get_edges(self):
+        return self.graph.edges(data=True)
      
 
     def print_graph(self):
@@ -263,10 +273,33 @@ class GraphLegoWorldData:
         for u, v, data in self.graph.edges(data=True):
             print(f"Edge ({u}, {v}): {data}")
 
+
+    def subgraph(self, nodes_num):
+        if nodes_num > self.graph.number_of_nodes():
+            raise ValueError(f"Requested {nodes_num} nodes, but the graph only has {self.graph.number_of_nodes()} nodes.")
+
+        # Select the specified number of nodes
+        selected_nodes = list(self.graph.nodes)[:nodes_num]
+        subgraph = self.graph.subgraph(selected_nodes).copy()
+
+        return subgraph
     
+
     def graph_to_torch(self) -> torch_geometric.data.Data:
-        return from_networkx(self.graph)
+        data = from_networkx(self.graph)
+        edge_index = data.edge_index
+        sorted_edges = torch.sort(edge_index, dim=0)[0]  # Sort each edge [min, max]
+        unique_edges = torch.unique(sorted_edges, dim=1)  # Keep only unique edges
+        data.edge_index = unique_edges
+        return data
     
 
     def graph_to_np(self) -> np.ndarray:
         return nx.to_numpy_array(self.graph)
+    
+
+    def save_as_ldraw(self, filename: str="test_ldr"):
+        with open(filename + ".ldr", "w") as file:
+            for node, data in self.get_nodes():
+                ldr_line = f"1 15 {data['x'] * BRICK_UNIT.W} {data['y'] * BRICK_UNIT.H} 1 1 0 0 0 1 0 0 0 1 3003.dat"
+                file.write(ldr_line + "\n") 
