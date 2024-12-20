@@ -1,6 +1,8 @@
 import gym
 from gym import spaces
 import numpy as np
+from typing import Tuple
+import torch
 
 from text2brick.models import GraphLegoWorldData
 from text2brick.gym.components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
@@ -11,7 +13,7 @@ class LegoEnv(gym.Env):
     Custom Gym environment for Lego brick placement on a grid.
     """
 
-    def __init__(self, size, reward_func: AbstractRewardFunc = IoUValidityRewardFunc()):
+    def __init__(self, dim: Tuple[int, int], reward_func: AbstractRewardFunc = IoUValidityRewardFunc()):
         """
         Initialize the Lego environment.
         
@@ -19,29 +21,23 @@ class LegoEnv(gym.Env):
             size (int): Size of the grid (size x size).
             reward_func (AbstractRewardFunc): Reward function to evaluate actions. Defaults to IoUValidityRewardFunc.
         """
-        self.size = size
+        self.dim = dim
         self.n_step = 0
         self.reward_func = reward_func
         self.lego_world = None
 
         # Define the observation space as a binary grid (size x size)
-        self.observation_space = spaces.MultiBinary([size, size])
+        self.observation_space = spaces.MultiBinary([self.dim[0], self.dim[1]])
 
         # Define the action space as grid coordinates
-        self.action_space = spaces.MultiDiscrete([size - 1, size - 1])
+        self.action_space = spaces.MultiDiscrete([self.dim[0] - 1, self.dim[1] - 1])
 
         self.reset()
 
 
     def __str__(self):
-        """
-        String representation of the environment, including spaces and reward function.
-        
-        Returns:
-            str: Description of the environment.
-        """
         return (
-            f"LegoEnv(Environment Size: {self.size}x{self.size}, \n"
+            f"LegoEnv(Environment Size: {self.dim[0]}x{self.dim[1]}, \n"
             f"Observation Space: {self.observation_space}, \n"
             f"Action Space: {self.action_space}, \n"
             f"Reward Function: {self.reward_func})"
@@ -60,7 +56,7 @@ class LegoEnv(gym.Env):
         """
         self.n_step = 0
         if not initial_state:
-            initial_state = np.zeros((self.size, self.size), dtype=np.uint8)
+            initial_state = np.zeros((self.dim[0], self.dim[1]), dtype=np.uint8)
 
         self.lego_world = GraphLegoWorldData(initial_state)
 
@@ -87,40 +83,25 @@ class LegoEnv(gym.Env):
         reward = self.reward_func(world_img=lego_world_array, validity=is_brick_valid, *args, **kwargs)
         self.n_step += 1
         info = {
+            "validity": is_brick_valid,
             "reward": reward,
             "steps": self.n_step,
             "brick": f"{col}, {row}"
         }
         done = False
 
+        reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(1)
+
         return lego_world_array, reward, done, info
 
 
     def generate_random_action(self):
-        """
-        Generate a random valid action from the action space.
-        
-        Returns:
-            tuple: Random grid coordinates (row, col).
-        """
         return tuple(self.action_space.sample())
 
 
     def get_obs(self):
-        """
-        Get the current state of the environment as a binary grid.
-        
-        Returns:
-            numpy.ndarray: Current grid representation.
-        """
         return self.lego_world.graph_to_table()
 
 
     def set_reward_function(self, reward_func: AbstractRewardFunc):
-        """
-        Update the reward function for the environment.
-        
-        Args:
-            reward_func (AbstractRewardFunc): New reward function to use.
-        """
         self.reward_func = reward_func

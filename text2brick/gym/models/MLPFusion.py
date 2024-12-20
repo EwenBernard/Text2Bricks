@@ -19,12 +19,12 @@ class MLP(nn.Module):
         # Store hidden dimensions for later use
         self.hidden_dims = hidden_dims
         # Define the fully connected layers with customizable hidden dimensions
-        self.fc1 = nn.Linear(f_fused_size[0] * f_fused_size[1] * f_fused_size[2] + h_graph_size[0] * h_graph_size[1], hidden_dims[0])  # Input size is f_fused_size + h_graph_size
+        self.fc1 = nn.Linear(f_fused_size[0] * f_fused_size[1] * f_fused_size[2] + h_graph_size[0] * h_graph_size[1] + 1, hidden_dims[0])  # Input size is f_fused_size + h_graph_size + 1 (for reward)
         self.fc2 = nn.Linear(hidden_dims[0], hidden_dims[1])
         self.fc3 = nn.Linear(hidden_dims[1], hidden_dims[2])
         self.fc4 = nn.Linear(hidden_dims[2], hidden_dims[3])
 
-    def forward(self, f_fused, h_graph):
+    def forward(self, f_fused, h_graph, reward):
         """
         Forward pass of the MLP, where the input feature tensor `f_fused` is flattened
         and combined with the graph tensor `h_graph`. The combined tensor is passed
@@ -39,9 +39,9 @@ class MLP(nn.Module):
         """
         # Flatten the f_fused tensor starting from the second dimension (C, H, W)
         flatten_tensor_features = f_fused.flatten(start_dim=1)  # Flatten to size [batch_size, C*H*W] -> 13x13 = 169
-        print(flatten_tensor_features.shape)
+        print(flatten_tensor_features.shape, h_graph.shape, reward)
         # Concatenate the flattened features with the h_graph tensor
-        combined_tensor = torch.cat((flatten_tensor_features, h_graph), dim=1)
+        combined_tensor = torch.cat((flatten_tensor_features, h_graph, reward), dim=1)
 
         # Pass through the fully connected layers with ReLU activations
         x = self.fc1(combined_tensor)
