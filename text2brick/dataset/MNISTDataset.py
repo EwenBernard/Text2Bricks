@@ -12,16 +12,19 @@ class MNISTDataset:
     and modifying samples by truncating rows or columns.
     """
 
-    def __init__(self, cache_dir: str = './tmp') -> None:
+    def __init__(self, cache_dir: str = './tmp', caching=True) -> None:
         """
         Initializes the Dataset by loading the MNIST data from OpenML.
 
         Args:
             cache_dir (str): Directory to cache the fetched data.
         """
-        memory = Memory(cache_dir)
-        fetch_openml_cached = memory.cache(fetch_openml)
-        mnist = fetch_openml_cached('mnist_784', version=1) 
+        if caching:
+            memory = Memory(cache_dir)
+            fetch_openml_cached = memory.cache(fetch_openml)
+            mnist = fetch_openml_cached('mnist_784', version=1) 
+        else:
+            mnist = fetch_openml('mnist_784', version=1)
 
         self.data = mnist.data  # 70000 samples, each with 784 features (28x28 pixels flattened)
         self.labels = mnist.target  # Corresponding labels for the dataset

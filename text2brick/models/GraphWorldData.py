@@ -1,10 +1,11 @@
 from typing import List, Tuple
 import networkx as nx
 import torch_geometric
-from torch_geometric.utils.convert import from_networkx
+from torch_geometric.utils.convert import from_networkx, to_networkx
 import torch
 import numpy as np
 from collections import deque
+import copy
 
 from text2brick.models import BRICK_UNIT
 
@@ -296,13 +297,22 @@ class GraphLegoWorldData:
         return subgraph
     
 
-    def graph_to_torch(self) -> torch_geometric.data.Data:
-        data = from_networkx(self.graph)
-        edge_index = data.edge_index
-        sorted_edges = torch.sort(edge_index, dim=0)[0]  # Sort each edge [min, max]
-        unique_edges = torch.unique(sorted_edges, dim=1)  # Keep only unique edges
-        data.edge_index = unique_edges
+    def graph_to_torch(self, deepcopy=False, keep_unique_edge=False) -> torch_geometric.data.Data:
+        if deepcopy:
+            data = copy.deepcopy(from_networkx(self.graph))
+        else: 
+            data = from_networkx(self.graph)
+
+        if keep_unique_edge:
+            sorted_edges = torch.sort(data.edge_index, dim=0)[0]  # Sort each edge [min, max]
+            unique_edges = torch.unique(sorted_edges, dim=1)  # Keep only unique edges
+            data.edge_index = unique_edges
+
         return data
+    
+
+    def torch_to_graph(self, data: torch_geometric.data.Data) -> nx.Graph:
+        return data.to_networkx()
     
 
     def graph_to_np(self) -> np.ndarray:
