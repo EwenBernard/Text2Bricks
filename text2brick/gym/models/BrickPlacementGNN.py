@@ -7,8 +7,6 @@
 #-> We can predict x,y coords, ok for simple bricks but Not scalable for large lego piece pool.
 
 # add edge embedding processing in the V2 version
-
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv, global_mean_pool
