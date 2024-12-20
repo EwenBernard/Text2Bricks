@@ -83,6 +83,23 @@ class GraphLegoWorldData:
         return table
     
 
+    def get_brick_at_edge(self):
+        """
+        Retrieve the brick at the edge (only one connection) or the brick at the highest y-coordinate.
+        """
+        # Nodes with degree 1 (edge nodes)
+        edge_bricks = [node for node in self.graph.nodes if self.graph.degree[node] == 1 and self.graph.nodes[node].get('y', False) != 0]
+       
+        if edge_bricks:
+            # Retrieve full node data and find the one with the highest y
+            edge_bricks_data = [self.graph.nodes[node] for node in edge_bricks]
+            return max(edge_bricks_data, key=lambda node: node["y"])
+        
+        # If no edge bricks, consider all nodes and retrieve the one with the highest y
+        all_bricks_data = [self.graph.nodes[node] for node in self.graph.nodes]
+        return max(all_bricks_data, key=lambda node: node["y"])
+    
+
     def add_brick(self, x: int, y: int) -> bool:
         """
         Adds a new brick to the graph at the specified (x, y) coordinates, if possible.
@@ -143,21 +160,15 @@ class GraphLegoWorldData:
         Returns:
             bool: True if the brick was successfully removed, False if no brick existed at the position.
         """
-        # Find the node that matches the given (x, y) coordinates
-        node_to_remove = None
         for node, data in self.graph.nodes(data=True):
             if data['x'] == x and data['y'] == y:
-                node_to_remove = node
-                break
+                self.graph.remove_nodes_from([node])
+                self._propagate_brick_validity(self.graph)
+                self._remove_invalids(self.graph)
+                return True
 
-        if not node_to_remove:
-            print(f"No brick found at ({x}, {y}) to remove.")
-            return False
-        
-        self._propagate_brick_validity(self.graph)
-        self._remove_invalids(self.graph)
-
-        return True
+        print(f"No brick found at ({x}, {y}) to remove.")
+        return False
 
 
     def _propagate_brick_validity(self, graph: nx.Graph) -> nx.Graph:

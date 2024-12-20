@@ -31,6 +31,11 @@ class CustomDatasetGraph(Dataset):
                 - edge_index (Tensor): Tensor containing the indices of the graph's edges.
                 - next_node (Tensor): Tensor containing the coordinates of the next node (brick) to place.
         """
+        #TODO add index
+        #TODO add dataloader
+        #TODO refactor transform 
+        #TODO remove brick at the extremity of the graph
+  
         array, _, _, _ = self.mnist.sample()
         lego_world_ref = GraphLegoWorldData(array)
         random_index = random.randint(0, lego_world_ref.nodes_num())
