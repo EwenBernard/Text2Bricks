@@ -11,7 +11,7 @@ class SNN(nn.Module):
     features of a target image and an environment image.
     """
 
-    def __init__(self, image_target):
+    def __init__(self, image_target=None):
         """
         Initializes the SNN with a target image.
 
@@ -21,11 +21,12 @@ class SNN(nn.Module):
         super().__init__()
 
         self.cnn = CNN()
-        self.target = self.cnn.forward(image_target)
-        self.image_environement = None
+        self.target = None
+        if image_target is not None:
+            self.target = self.cnn.forward(image_target)
 
 
-    def forward(self, image_environement):
+    def forward(self, image_environement, image_target=None):
         """
         Forward pass to compute similarity metrics between the target and environment images.
 
@@ -35,9 +36,12 @@ class SNN(nn.Module):
         Returns:
             tuple: (cosine similarity, normalized Euclidean distance) between the target and environment image features.
         """
-        self.image_environement = self.cnn.forward(image_environement)
-
-        return self.target - self.image_environement
+        image_environement = self.cnn.forward(image_environement)
+        if self.target is None:
+            image_target = self.cnn.forward(image_target)
+            return image_target - image_environement
+        else:
+            return self.target - image_environement
 
 
     def get_features(self):

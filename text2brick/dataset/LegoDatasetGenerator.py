@@ -4,12 +4,14 @@ from text2brick.models import GraphLegoWorldData
 from text2brick.dataset import MNISTDataset
 from .Preprocessing import PreprocessImage
 from tqdm import tqdm
+from text2brick.gym import AbstractRewardFunc
 
 class LegoDatasetGenerator:
-    def __init__(self, output_dir: str = "./lego_dataset"):
+    def __init__(self, output_dir: str = "./lego_dataset", reward_function: AbstractRewardFunc = None):
         self.mnist = MNISTDataset()
         self.preprocess_image = PreprocessImage()
         self.output_dir = output_dir
+        self.reward_function = reward_function
 
     def generate(self, idx: int, save_iteration_graph=True):
         array, _, _, _ = self.mnist.sample(sample_index=idx)
@@ -31,16 +33,20 @@ class LegoDatasetGenerator:
             lego_world.remove_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
             current_image = lego_world.graph_to_table()
 
+            reward = self.reward_function(array, current_image, 1)
+
             if save_iteration_graph:
                 iteration_data.append([
                     self.preprocess_image(current_image),  # Current image as a tensor
-                    brick_to_remove,  # Brick to remove
-                    lego_world.graph_to_torch(deepcopy=True),  # Current graph
+                    torch.tensor([brick_to_remove.get("x"), brick_to_remove.get("y")]),  # next brick to add in the observation
+                    torch.tensor(reward),
+                    lego_world.graph_to_torch(deepcopy=True) ,  # Current graph
                 ])
             else: 
                 iteration_data.append([
                     self.preprocess_image(current_image),  # Current image as a tensor
-                    brick_to_remove,  # Brick to remove
+                    torch.tensor([brick_to_remove.get("x"), brick_to_remove.get("y")]),  # next brick to add in the observation
+                    torch.tensor(reward),
                 ])
 
         torch.save({
