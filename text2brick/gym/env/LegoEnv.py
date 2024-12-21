@@ -5,8 +5,8 @@ import torch
 from typing import Tuple
 
 from text2brick.models import GraphLegoWorldData
-from text2brick.gym import IoUValidityRewardFunc, AbstractRewardFunc
-from text2brick.dataset import PreprocessImage
+from text2brick.gym.components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
+from text2brick.dataset.Preprocessing import PreprocessImage
 
 
 class LegoEnv(gym.Env):
