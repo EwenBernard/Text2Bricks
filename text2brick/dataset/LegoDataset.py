@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 import torch
-from torch_geometric.data import Batch
+from torch_geometric.data import Batch, Data
 import os
 
 class LegoPretrainDataset(Dataset):
@@ -27,18 +27,17 @@ class LegoPretrainDataset(Dataset):
                 target_image = data["initial_data"]["target_image"]
                 initial_graph = data["initial_data"]["initial_graph"]
 
-                
-
                 for episode in data["iteration_data"]:
                     current_graph = episode[3]
+
 
                     if current_graph.num_nodes == 0:
                         # Create a valid empty graph
                         current_graph = Data(
-                            x=torch.empty(0, 2),
-                            edge_index=torch.empty(2, 0, dtype=torch.long),  # No edges
-                            y=torch.empty(0),  # No node labels
-                            num_nodes=0  # No nodes
+                            x = torch.empty(0),
+                            edge_index = torch.empty(2, 0, dtype=torch.long),  # No edges
+                            y = torch.empty(0),  # No node labels
+                            validity = torch.empty(0)
                         )
                     
                     self.samples.append({
@@ -46,7 +45,7 @@ class LegoPretrainDataset(Dataset):
                         "initial_graph": initial_graph,
                         "current_build_image": episode[0],
                         "brick_to_add": episode[1],
-                        "reward": reward,
+                        "reward": episode[2],
                         "current_graph": current_graph,
                     })
 
@@ -74,20 +73,20 @@ class LegoPretrainDataset(Dataset):
         return (sample["target_image"], sample["current_build_image"], sample["brick_to_add"], sample["reward"], sample["current_graph"])
         #return sample["current_graph"]
 
-    def custom_collate_fn(batch):
-        try:
-            # Stack fixed-size tensors
-            target_images = torch.stack([item[0] for item in batch])
-            current_build_images = torch.stack([item[1] for item in batch])
-            bricks_to_add = torch.stack([item[2] for item in batch])  # Shape [batch_size, 2]
-            rewards = torch.tensor([item[3].item() for item in batch], dtype=torch.float32)
+    # def custom_collate_fn(batch):
+    #     try:
+    #         # Stack fixed-size tensors
+    #         target_images = torch.stack([item[0] for item in batch])
+    #         current_build_images = torch.stack([item[1] for item in batch])
+    #         bricks_to_add = torch.stack([item[2] for item in batch])  # Shape [batch_size, 2]
+    #         rewards = torch.tensor([item[3].item() for item in batch], dtype=torch.float32)
 
-            # Batch graph data
-            current_graphs = Batch.from_data_list([item[4] for item in batch])
+    #         # Batch graph data
+    #         current_graphs = Batch.from_data_list([item[4] for item in batch])
 
-            return (target_images, current_build_images, bricks_to_add, rewards, current_graphs)
+    #         return (target_images, current_build_images, bricks_to_add, rewards, current_graphs)
                 
-        except Exception as e:
-            print("Error in custom collate function:")
-            print(f"Batch: {batch}")
-            raise e
+    #     except Exception as e:
+    #         print("Error in custom collate function:")
+    #         print(f"Batch: {batch}")
+    #         raise e
