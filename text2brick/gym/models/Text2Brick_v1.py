@@ -45,7 +45,7 @@ class Text2Brick_v1(nn.Module):
             grid_size=grid_size
         ) 
         
-    def forward(self, image_environement, node_features, edge_index, reward, image_target=None, batch=None):
+    def forward(self, image_environement, gnn_input, reward, image_target=None, batch=None):
         """
         Forward pass to compute the predicted position of the brick.
         
@@ -62,7 +62,7 @@ class Text2Brick_v1(nn.Module):
         image_difference = self.snn(image_environement, image_target=image_target)
         
         # Get the node embeddings from the GNN
-        gnn_embeddings = self.gnn(node_features, edge_index, batch)
+        gnn_embeddings = self.gnn(gnn_input.x, gnn_input.y, batch)
                 
         # Pass gnn embedded graph and img differences through the MLP to be fused and reduced
         mlp_output = self.mlp(image_difference, gnn_embeddings, reward)
