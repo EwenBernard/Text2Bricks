@@ -2,9 +2,6 @@ from torch.utils.data import Dataset
 import torch
 from torch_geometric.data import Batch
 import os
-import torch
-from torch.utils.data import Dataset
-from torch_geometric.data import Data
 
 class LegoPretrainDataset(Dataset):
     def __init__(self, dataset_dir: str):

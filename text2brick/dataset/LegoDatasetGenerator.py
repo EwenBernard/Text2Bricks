@@ -1,10 +1,11 @@
 import os
 import torch
-from text2brick.models import GraphLegoWorldData
-from text2brick.dataset import MNISTDataset
-from .Preprocessing import PreprocessImage
 from tqdm import tqdm
+
+# from text2brick.models import GraphLegoWorldData
 from text2brick.gym import AbstractRewardFunc
+# from text2brick.dataset.MNISTDataset import MNISTDataset
+# from text2brick.dataset.Preprocessing import PreprocessImage
 
 class LegoDatasetGenerator:
     def __init__(self, output_dir: str = "./lego_dataset", reward_function: AbstractRewardFunc = None):

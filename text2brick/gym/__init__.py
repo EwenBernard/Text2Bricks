@@ -1,5 +1,5 @@
-from .env.LegoEnv import LegoEnv
 from .components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
+from .env.LegoEnv import LegoEnv
 from .models.BrickPlacementGNN import BrickPlacementGNN
 from .models.MLPFusion import MLP
 from .models.GNNHead import PositionHead2D

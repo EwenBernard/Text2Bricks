@@ -3,8 +3,6 @@ import torch
 
 class MLP(nn.Module):
 
-    #TODO add reward function output to the concat layer - add +1 to Linear layer and forward params. add to mail model params.
-
     def __init__(self, f_fused_size, h_graph_size, hidden_dims=[128, 64, 32, 16]):
         """
         Initialize the MLP with fixed input sizes for f_fused and h_graph, and customizable hidden layer dimensions.
@@ -39,7 +37,6 @@ class MLP(nn.Module):
         """
         # Flatten the f_fused tensor starting from the second dimension (C, H, W)
         flatten_tensor_features = f_fused.flatten(start_dim=1)  # Flatten to size [batch_size, C*H*W] -> 13x13 = 169
-        print(flatten_tensor_features.shape, h_graph.shape, reward)
         # Concatenate the flattened features with the h_graph tensor
         combined_tensor = torch.cat((flatten_tensor_features, h_graph, reward), dim=1)
 

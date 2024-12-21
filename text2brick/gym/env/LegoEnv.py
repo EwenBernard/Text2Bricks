@@ -1,11 +1,12 @@
 import gym
 from gym import spaces
 import numpy as np
-from typing import Tuple
 import torch
+from typing import Tuple
 
 from text2brick.models import GraphLegoWorldData
-from text2brick.gym.components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
+from text2brick.gym import IoUValidityRewardFunc, AbstractRewardFunc
+from text2brick.dataset import PreprocessImage
 
 
 class LegoEnv(gym.Env):
@@ -25,6 +26,7 @@ class LegoEnv(gym.Env):
         self.n_step = 0
         self.reward_func = reward_func
         self.lego_world = None
+        self.is_new = True
 
         # Define the observation space as a binary grid (size x size)
         self.observation_space = spaces.MultiBinary([self.dim[0], self.dim[1]])
@@ -59,6 +61,7 @@ class LegoEnv(gym.Env):
             initial_state = np.zeros((self.dim[0], self.dim[1]), dtype=np.uint8)
 
         self.lego_world = GraphLegoWorldData(initial_state)
+        self.is_new = True
 
 
     def step(self, action, *args, **kwargs):
@@ -90,6 +93,7 @@ class LegoEnv(gym.Env):
         }
         done = False
 
+        lego_world_array = self.obs_as_tensor(lego_world_array)
         reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(1)
 
         return lego_world_array, reward, done, info
@@ -101,6 +105,16 @@ class LegoEnv(gym.Env):
 
     def get_obs(self):
         return self.lego_world.graph_to_table()
+    
+
+    def obs_as_tensor(self, obs: np.array=None) -> torch.tensor:
+        if obs:
+            arr = obs
+        else:
+            arr = self.get_obs()
+
+        preprocess = PreprocessImage()
+        return preprocess(arr).unsqueeze(0)
 
 
     def set_reward_function(self, reward_func: AbstractRewardFunc):
