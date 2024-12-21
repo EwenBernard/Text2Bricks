@@ -12,7 +12,7 @@ class MNISTDataset:
     and modifying samples by truncating rows or columns.
     """
 
-    def __init__(self, cache_dir: str = './tmp', caching=True) -> None:
+    def __init__(self, sample_size: int = 1000, cache_dir: str = './tmp', caching=True) -> None:
         """
         Initializes the Dataset by loading the MNIST data from OpenML.
 
@@ -26,8 +26,8 @@ class MNISTDataset:
         else:
             mnist = fetch_openml('mnist_784', version=1)
 
-        self.data = mnist.data  # 70000 samples, each with 784 features (28x28 pixels flattened)
-        self.labels = mnist.target  # Corresponding labels for the dataset
+        self.data = mnist.data[:sample_size]
+        self.labels = mnist.target[:sample_size]
 
 
     def sample(self, sample_index=None, n_cols=None, n_rows=None) -> Tuple[np.array, Image.Image]:

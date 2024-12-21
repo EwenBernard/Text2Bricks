@@ -8,8 +8,8 @@ from text2brick.dataset.MNISTDataset import MNISTDataset
 from text2brick.dataset.Preprocessing import PreprocessImage
 
 class LegoDatasetGenerator:
-    def __init__(self, output_dir: str = "./lego_dataset", reward_function: AbstractRewardFunc = None):
-        self.mnist = MNISTDataset()
+    def __init__(self, output_dir: str = "./lego_dataset", reward_function: AbstractRewardFunc = None, sample_size: int = 50):
+        self.mnist = MNISTDataset(sample_size=sample_size)
         self.preprocess_image = PreprocessImage()
         self.output_dir = output_dir
         self.reward_function = reward_function

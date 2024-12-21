@@ -6,7 +6,7 @@ from text2brick.gym.models.SNNImg import SNN
 from torch import nn
 
 class Text2Brick_v1(nn.Module):
-    def __init__(self, image_target, batch_size=1, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, gnn_num_heads=4, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
+    def __init__(self, image_target=None, batch_size=1, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, gnn_num_heads=4, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
         """
         Initializes the text2brick v1.
 
@@ -22,7 +22,7 @@ class Text2Brick_v1(nn.Module):
         super(Text2Brick_v1, self).__init__()
 
         # Define the Siamese Neural Network model for image comparison
-        self.snn = SNN(image_target)  # Outputs a 13x13 feature map
+        self.snn = SNN(image_target=image_target)  # Outputs a 13x13 feature map
         
         # Define the GNN model for graph brick embedding
         self.gnn = BrickPlacementGNN(
@@ -45,7 +45,7 @@ class Text2Brick_v1(nn.Module):
             grid_size=grid_size
         ) 
         
-    def forward(self, image_environement, node_features, edge_index, reward, batch=None):
+    def forward(self, image_environement, node_features, edge_index, reward, image_target=None, batch=None):
         """
         Forward pass to compute the predicted position of the brick.
         
@@ -59,7 +59,7 @@ class Text2Brick_v1(nn.Module):
             torch.Tensor: Predicted position (2D) for the brick.
         """
         # Get image features by comparing the target and environment images
-        image_difference = self.snn(image_environement)
+        image_difference = self.snn(image_environement, image_target=image_target)
         
         # Get the node embeddings from the GNN
         gnn_embeddings = self.gnn(node_features, edge_index, batch)
