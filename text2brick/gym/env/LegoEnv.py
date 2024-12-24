@@ -3,6 +3,7 @@ from gym import spaces
 import numpy as np
 import torch
 from typing import Tuple
+import subprocess
 
 from text2brick.models import GraphLegoWorldData
 from text2brick.gym.components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
@@ -14,7 +15,9 @@ class LegoEnv(gym.Env):
     Custom Gym environment for Lego brick placement on a grid.
     """
 
-    def __init__(self, dim: Tuple[int, int], reward_func: AbstractRewardFunc = IoUValidityRewardFunc()):
+    def __init__(self, dim: Tuple[int, int], ldr_filename: str = "test_ldr",
+                 reward_func: AbstractRewardFunc = IoUValidityRewardFunc(),
+                 render_options: Tuple[bool, str] = (False, None)):
         """
         Initialize the Lego environment.
         
@@ -26,13 +29,17 @@ class LegoEnv(gym.Env):
         self.n_step = 0
         self.reward_func = reward_func
         self.lego_world = None
-        self.is_new = True
+
+        self.ldr_filename = ldr_filename
+        self.open_ldview, self.ldview_path = render_options
+        self.ldview_process = None
+
 
         # Define the observation space as a binary grid (size x size)
         self.observation_space = spaces.MultiBinary([self.dim[0], self.dim[1]])
 
         # Define the action space as grid coordinates
-        self.action_space = spaces.MultiDiscrete([self.dim[0] - 1, self.dim[1] - 1])
+        self.action_space = spaces.MultiDiscrete([self.dim[1] - 1, self.dim[0] - 1])
 
         self.reset()
 
@@ -63,8 +70,14 @@ class LegoEnv(gym.Env):
         self.lego_world = GraphLegoWorldData(initial_state)
         self.is_new = True
 
+        # Erase content or create ldr file
+        with open(self.ldr_filename + ".ldr", "w") as file:
+            pass
+        
+        self.close()
 
-    def step(self, action, *args, **kwargs):
+
+    def step(self, action, max_step=10, *args, **kwargs) -> Tuple[torch.tensor, torch.tensor, bool, dict]:
         """
         Take a step in the environment by placing a brick at the specified location.
 
@@ -76,39 +89,79 @@ class LegoEnv(gym.Env):
         Returns:
             tuple: (observation, reward, done, info)
         """
-        row, col = action
+        col, row = action
+        done = False
 
         # Place the brick in the environment
         is_brick_valid = self.lego_world.add_brick(col, row)
+        
+        if is_brick_valid:
+            self.n_step += 1
+
         lego_world_array = self.get_obs()
 
         # Compute the reward using the reward function
         reward = self.reward_func(world_img=lego_world_array, validity=is_brick_valid, *args, **kwargs)
-        self.n_step += 1
+
+        if self.n_step == max_step:
+            done = True
+
         info = {
             "validity": is_brick_valid,
-            "reward": reward,
             "steps": self.n_step,
             "brick": f"{col}, {row}"
         }
-        done = False
-
-        lego_world_array = self.obs_as_tensor(lego_world_array)
+        
+        lego_world_tensor = self.obs_as_tensor(lego_world_array)
         reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(1)
 
-        return lego_world_array, reward, done, info
+        return lego_world_tensor, reward, done, info
+    
+    
+    def render(self, render_3D=False, print_obs=False):
+        # Save the LDraw file
+        self.lego_world.save_as_ldraw(self.ldr_filename)
+
+        # Render in 3D using LDView if enabled
+        if self.open_ldview and render_3D:
+            command = [self.ldview_path, f"-Polling=4", self.ldr_filename + ".ldr"]
+            print("Start 3D")
+            try:
+                # Use Popen to start the subprocess without blocking
+                self.ldview_process = subprocess.Popen(command)
+            except Exception as e:
+                print(f"Can't open LDView: {e}")
+            self.open_ldview = False
+
+        # Print the observation if required
+        if print_obs:
+            print(self.get_obs())
 
 
-    def generate_random_action(self):
+    def close(self):
+        if not self.open_ldview:
+            try:
+                self.ldview_process.terminate()  # Sends SIGTERM (soft kill)
+                self.ldview_process.wait()       # Waits for the process to exit
+                print("LDView terminated.")
+            except KeyboardInterrupt:
+                # If the user presses Ctrl+C, kill the process
+                self.ldview_process.kill()       # Sends SIGKILL (hard kill)
+                self.ldview_process.wait()       # Ensures the process is properly cleaned up
+            
+            self.open_ldview = True
+
+
+    def generate_random_action(self) -> Tuple[int, int]:
         return tuple(self.action_space.sample())
 
 
-    def get_obs(self):
+    def get_obs(self) -> np.array:
         return self.lego_world.graph_to_table()
     
 
     def obs_as_tensor(self, obs: np.array=None) -> torch.tensor:
-        if obs:
+        if obs is not None:
             arr = obs
         else:
             arr = self.get_obs()
