@@ -15,9 +15,7 @@ class LegoEnv(gym.Env):
     Custom Gym environment for Lego brick placement on a grid.
     """
 
-    def __init__(self, dim: Tuple[int, int], ldr_filename: str = "test_ldr",
-                 reward_func: AbstractRewardFunc = IoUValidityRewardFunc(),
-                 render_options: Tuple[bool, str] = (False, None)):
+    def __init__(self, dim: Tuple[int, int], ldr_filename: str = "test_ldr", reward_func: AbstractRewardFunc = IoUValidityRewardFunc()):
         """
         Initialize the Lego environment.
         
@@ -31,7 +29,7 @@ class LegoEnv(gym.Env):
         self.lego_world = None
 
         self.ldr_filename = ldr_filename
-        self.open_ldview, self.ldview_path = render_options
+        self.is_rendering_3D = False
         self.ldview_process = None
 
 
@@ -118,20 +116,9 @@ class LegoEnv(gym.Env):
         return lego_world_tensor, reward, done, info
     
     
-    def render(self, render_3D=False, print_obs=False):
+    def render(self, print_obs=False):
         # Save the LDraw file
         self.lego_world.save_as_ldraw(self.ldr_filename)
-
-        # Render in 3D using LDView if enabled
-        if self.open_ldview and render_3D:
-            command = [self.ldview_path, f"-Polling=4", self.ldr_filename + ".ldr"]
-            print("Start 3D")
-            try:
-                # Use Popen to start the subprocess without blocking
-                self.ldview_process = subprocess.Popen(command)
-            except Exception as e:
-                print(f"Can't open LDView: {e}")
-            self.open_ldview = False
 
         # Print the observation if required
         if print_obs:
@@ -139,7 +126,7 @@ class LegoEnv(gym.Env):
 
 
     def close(self):
-        if not self.open_ldview:
+        if self.is_rendering_3D:
             try:
                 self.ldview_process.terminate()  # Sends SIGTERM (soft kill)
                 self.ldview_process.wait()       # Waits for the process to exit
@@ -149,7 +136,20 @@ class LegoEnv(gym.Env):
                 self.ldview_process.kill()       # Sends SIGKILL (hard kill)
                 self.ldview_process.wait()       # Ensures the process is properly cleaned up
             
-            self.open_ldview = True
+            self.is_rendering_3D = False
+
+
+    def start_3D_rendering(self, ldview_path):
+        if not self.is_rendering_3D:
+                command = [ldview_path, f"-Polling=4", self.ldr_filename + ".ldr"]
+                print("Start 3D")
+                try:
+                    # Use Popen to start the subprocess without blocking
+                    self.ldview_process = subprocess.Popen(command)
+                except Exception as e:
+                    print(f"Can't open LDView: {e}")
+                else:
+                    self.is_rendering_3D = True
 
 
     def generate_random_action(self) -> Tuple[int, int]:
