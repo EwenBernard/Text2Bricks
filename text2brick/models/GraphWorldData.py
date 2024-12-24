@@ -298,10 +298,11 @@ class GraphLegoWorldData:
     
 
     def graph_to_torch(self, deepcopy=False, keep_unique_edge=False) -> torch_geometric.data.Data:
+        
+        data = from_networkx(self.graph, group_node_attrs=['x', 'y'])
+
         if deepcopy:
-            data = copy.deepcopy(from_networkx(self.graph))
-        else: 
-            data = from_networkx(self.graph)
+            data = copy.deepcopy(data)    
 
         if keep_unique_edge:
             sorted_edges = torch.sort(data.edge_index, dim=0)[0]  # Sort each edge [min, max]

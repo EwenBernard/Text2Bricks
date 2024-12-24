@@ -6,7 +6,7 @@ from text2brick.gym.models.SNNImg import SNN
 from torch import nn
 
 class Text2Brick_v1(nn.Module):
-    def __init__(self, image_target=None, batch_size=1, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, gnn_num_heads=4, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
+    def __init__(self, image_target=None, batch_size=1, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
         """
         Initializes the text2brick v1.
 
@@ -28,8 +28,7 @@ class Text2Brick_v1(nn.Module):
         self.gnn = BrickPlacementGNN(
             node_feature_dim=gnn_node_feature_dim,
             hidden_dim=gnn_hidden_dim,
-            output_dim=gnn_output_dim,
-            num_heads=gnn_num_heads
+            output_dim=gnn_output_dim
         )
 
         # Define the MLP for feature fusion and dimensionality reduction
@@ -45,7 +44,7 @@ class Text2Brick_v1(nn.Module):
             grid_size=grid_size
         ) 
         
-    def forward(self, image_environement, gnn_input, reward, image_target=None, batch=None):
+    def forward(self, image_environement, gnn_input, reward, image_target=None):
         """
         Forward pass to compute the predicted position of the brick.
         
@@ -62,7 +61,7 @@ class Text2Brick_v1(nn.Module):
         image_difference = self.snn(image_environement, image_target=image_target)
         
         # Get the node embeddings from the GNN
-        gnn_embeddings = self.gnn(gnn_input.x, gnn_input.y, batch)
+        gnn_embeddings = self.gnn(gnn_input.x, gnn_input.edge_index, gnn_input.batch)
                 
         # Pass gnn embedded graph and img differences through the MLP to be fused and reduced
         mlp_output = self.mlp(image_difference, gnn_embeddings, reward)
