@@ -21,7 +21,7 @@ class GraphLegoWorldData:
 
     def __init__(self, img: np.ndarray):
         self.graph = self._create_graph_from_table(img)
-        self.world_dim = (img.shape[0], img.shape[1], 1)
+        self.world_dim = (img.shape[0], img.shape[1], 1) # (y, x, z)
 
 
     def _create_graph_from_table(self, table: np.ndarray) -> nx.Graph:
@@ -42,7 +42,7 @@ class GraphLegoWorldData:
             x = 0
             while x < len(row) - 1:  # Ensure there's space for a pair of ones
                 if row[x] == 1 and row[x+1] == 1:  # Check for consecutive ones
-                    graph.add_node(brick_id, x=x, y=y, validity=True if y == 0 else False)
+                    graph.add_node(brick_id, x=x, y=y, saved=False, validity=True if y == 0 else False)
                     brick_id += 1
                     x += 2  # Skip the next index since it is part of the current block
                 else:
@@ -127,12 +127,12 @@ class GraphLegoWorldData:
         if self._check_overlap(x, y):
             print(f"Overlap: A brick already exists at ({x}, {y})")
             return False
-        if x + 1 >= self.world_dim[0] or y >= self.world_dim[1]:
+        if x + 1 >= self.world_dim[1] or y >= self.world_dim[0]:
             print(f"Outside: Brick at ({x}, {y}) is out of the world")
             return False
 
         brick_id = len(self.graph.nodes) 
-        self.graph.add_node(brick_id, x=x, y=y, validity=True if y == 0 else False)
+        self.graph.add_node(brick_id, x=x, y=y, saved=False, validity=True if y == 0 else False)
         
         # Update the edges (connections) between the new brick and its neighbors
         for neighbor_id, data in self.graph.nodes(data=True):
@@ -256,7 +256,7 @@ class GraphLegoWorldData:
             bool: True if there is overlap (another brick exists at or adjacent to the position), False otherwise.
         """
         for _, data in self.graph.nodes(data=True):
-            if (data['x'] == x or data['x'] + 1 == x) and data['y'] == y:
+            if (data['x'] == x or data['x'] + 1 == x or data['x'] == x + 1) and data['y'] == y:
                 return True
         return False
     
@@ -320,8 +320,18 @@ class GraphLegoWorldData:
         return nx.to_numpy_array(self.graph)
     
 
-    def save_as_ldraw(self, filename: str="test_ldr"):
-        with open(filename + ".ldr", "w") as file:
+    def save_as_ldraw(self, filename: str = "test_ldr", delete_all: bool = False):
+        # Open the file in write mode if delete_all is True, else in append mode
+        mode = "w" if delete_all else "a"
+        with open(filename + ".ldr", mode) as file:
             for _, data in self.get_nodes():
-                ldr_line = f"1 15 {data['x'] * BRICK_UNIT.W} {data['y'] * BRICK_UNIT.H} 1 1 0 0 0 1 0 0 0 1 3003.dat"
-                file.write(ldr_line + "\n") 
+                if not data['saved']:
+                    # Create the LDraw line for the part
+                    ldr_line = (
+                        f"1 15 {data['x'] * BRICK_UNIT.W} {data['y'] * BRICK_UNIT.H} 1 "
+                        f"1 0 0 0 1 0 0 0 1 3003.dat"
+                    )
+                    # Write the line to the file
+                    file.write(ldr_line + "\n")
+                    # Mark the part as saved
+                    data['saved'] = True
