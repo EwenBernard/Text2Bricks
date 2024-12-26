@@ -10,17 +10,17 @@ class PositionHead3D(nn.Module):
         
         # Position Head: Predicts 3D grid indices for x, y, z
         self.position_x = nn.Sequential(
-            nn.Linear(mlp_output_dim[1], 128),
+            nn.Linear(mlp_output_dim, 128),
             nn.ReLU(),
             nn.Linear(128, grid_size[0])  # Classification logits for x-axis
         )
         self.position_y = nn.Sequential(
-            nn.Linear(mlp_output_dim[1], 128),
+            nn.Linear(mlp_output_dim, 128),
             nn.ReLU(),
             nn.Linear(128, grid_size[1])  # Classification logits for y-axis
         )
         self.position_z = nn.Sequential(
-            nn.Linear(mlp_output_dim[1], 128),
+            nn.Linear(mlp_output_dim, 128),
             nn.ReLU(),
             nn.Linear(128, grid_size[2])  # Classification logits for z-axis
         )
@@ -51,12 +51,12 @@ class PositionHead2D(nn.Module):
         
         # Position Head: Predicts 2D grid indices for x, y
         self.position_x = nn.Sequential(
-            nn.Linear(mlp_output_dim[1], 128),
+            nn.Linear(mlp_output_dim, 128),
             nn.ReLU(),
             nn.Linear(128, grid_size[0])  # Classification logits for x-axis
         )
         self.position_y = nn.Sequential(
-            nn.Linear(mlp_output_dim[1], 128),
+            nn.Linear(mlp_output_dim, 128),
             nn.ReLU(),
             nn.Linear(128, grid_size[1])  # Classification logits for y-axis
         )

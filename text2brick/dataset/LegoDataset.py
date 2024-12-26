@@ -29,13 +29,14 @@ class LegoPretrainDataset(Dataset):
 
                 for episode in data["iteration_data"]:
                     current_graph = episode[3]
-                    
+                    current_graph.x = current_graph.x.float()
+                    current_graph.edge_index = current_graph.edge_index.long()
 
                     if current_graph.num_nodes == 0:
                         # Create a valid empty graph
                         #TODO need to modify the dtype when changing the coord system to non int coords
                         current_graph = Data(
-                            x = torch.empty(0, 2, dtype=torch.long),
+                            x = torch.empty(0, 2, dtype=torch.float),
                             edge_index = torch.empty(2, 0, dtype=torch.long),  # No edges
                             validity = torch.empty(0)
                         )

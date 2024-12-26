@@ -17,7 +17,7 @@ class MLP(nn.Module):
         # Store hidden dimensions for later use
         self.hidden_dims = hidden_dims
         # Define the fully connected layers with customizable hidden dimensions
-        self.fc1 = nn.Linear(f_fused_size[0] * f_fused_size[1] * f_fused_size[2] + h_graph_size[0] * h_graph_size[1] + 1, hidden_dims[0])  # Input size is f_fused_size + h_graph_size + 1 (for reward)
+        self.fc1 = nn.Linear(f_fused_size[0] * f_fused_size[1] + h_graph_size + 1, hidden_dims[0])  # Input size is f_fused_size + h_graph_size + 1 (for reward)
         self.fc2 = nn.Linear(hidden_dims[0], hidden_dims[1])
         self.fc3 = nn.Linear(hidden_dims[1], hidden_dims[2])
         self.fc4 = nn.Linear(hidden_dims[2], hidden_dims[3])
@@ -29,16 +29,19 @@ class MLP(nn.Module):
         through several fully connected layers with ReLU activations.
 
         Args:
-            f_fused (torch.Tensor): The feature tensor, size [batch_size, C, H, W]
+            f_fused (torch.Tensor): The feature tensor, size [batch_size, 13, 13]
             h_graph (torch.Tensor): GNN output tensor, size [batch_size, gnn_hidden_dim] 
 
         Returns:
             torch.Tensor: The output of the final fully connected layer
         """
-        # Flatten the f_fused tensor starting from the second dimension (C, H, W)
-        flatten_tensor_features = f_fused.flatten(start_dim=1)  # Flatten to size [batch_size, C*H*W] -> 13x13 = 169
-        # Concatenate the flattened features with the h_graph tensor
-        combined_tensor = torch.cat((flatten_tensor_features, h_graph, reward), dim=1)
+        # Flatten tensor starting from the second dimension
+        f_fused_flat = f_fused.view(f_fused.size(0), -1).float()  # [batch_size, 13, 13]
+        h_graph_flat = h_graph.view(h_graph.size(0), -1).float()  # [batch_size, gnn_output_dim]
+        reward = reward.view(-1, 1).float() # [batch_size, 1]
+
+        # Concatenate all inputs along the feature dimension
+        combined_tensor = torch.cat([f_fused_flat, h_graph_flat, reward], dim=1)
 
         # Pass through the fully connected layers with ReLU activations
         x = self.fc1(combined_tensor)

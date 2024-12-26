@@ -302,10 +302,12 @@ class GraphLegoWorldData:
         
         if self.graph.number_of_nodes() == 0:
             # Create an empty Data object
-            data = Data(x=torch.empty((0, 2)), edge_index=torch.empty((2, 0), dtype=torch.float))
+            data = Data(x=torch.empty((0, 2), dtype=torch.float), edge_index=torch.empty((2, 0), dtype=torch.long))
         else:
             # Convert from NetworkX to PyTorch Geometric Data
             data = from_networkx(self.graph, group_node_attrs=['x', 'y'])
+            data.x = data.x.float()
+            data.edge_index = data.edge_index.long()
 
         if deepcopy:
             data = copy.deepcopy(data)    
