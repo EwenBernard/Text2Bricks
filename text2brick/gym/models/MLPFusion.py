@@ -35,10 +35,19 @@ class MLP(nn.Module):
         Returns:
             torch.Tensor: The output of the final fully connected layer
         """
+
+        print(f"Shape of f_fused: {f_fused.shape}")
+        print(f"Shape of h_graph: {h_graph.shape}")
+        print(f"Shape of reward: {reward.shape}")
+
         # Flatten tensor starting from the second dimension
         f_fused_flat = f_fused.view(f_fused.size(0), -1).float()  # [batch_size, 13, 13]
         h_graph_flat = h_graph.view(h_graph.size(0), -1).float()  # [batch_size, gnn_output_dim]
         reward = reward.view(-1, 1).float() # [batch_size, 1]
+
+        print(f"Shape of f_fused_flat: {f_fused_flat.shape}")
+        print(f"Shape of h_graph_flat: {h_graph_flat.shape}")
+        print(f"Shape of reward_flat: {reward.shape}")
 
         # Concatenate all inputs along the feature dimension
         combined_tensor = torch.cat([f_fused_flat, h_graph_flat, reward], dim=1)
