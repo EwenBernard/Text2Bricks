@@ -30,11 +30,6 @@ class CNN(nn.Module):
         Returns:
             torch.Tensor: The output tensor containing the reduced 13x13 feature map.
         """
-        #TODO change cuda params 
-        # Move the input and model to the GPU if available
-        if torch.cuda.is_available():
-            input_tensor = input_tensor.to('cuda')
-            self.model.to('cuda')
         
         # Perform inference without computing gradients
         with torch.no_grad():

@@ -49,9 +49,6 @@ class BrickPlacementGNN(nn.Module):
         - graph_embedding (Tensor): A fixed-size graph-level embedding size [batch_size, output_dim].
         """
         # GAT Layer 1 with ReLU activation
-
-        print(f"x shape before gcn1: {x.shape}")
-        print(f"edge_index shape before gcn1: {edge_index.shape}")
         x = self.gcn1(x, edge_index)
         x = F.relu(x)
 

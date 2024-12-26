@@ -298,19 +298,25 @@ class GraphLegoWorldData:
         return subgraph
     
 
-    def graph_to_torch(self, deepcopy=False, keep_unique_edge=False) -> torch_geometric.data.Data:
+    def graph_to_torch(self, deepcopy=True, keep_unique_edge=False, attrs_to_keep=['x', 'y']) -> torch_geometric.data.Data:
         
         if self.graph.number_of_nodes() == 0:
             # Create an empty Data object
-            data = Data(x=torch.empty((0, 2), dtype=torch.float), edge_index=torch.empty((2, 0), dtype=torch.long))
-        else:
-            # Convert from NetworkX to PyTorch Geometric Data
-            data = from_networkx(self.graph, group_node_attrs=['x', 'y'])
-            data.x = data.x.float()
-            data.edge_index = data.edge_index.long()
+            return Data(x=torch.empty((0, 2), dtype=torch.float), edge_index=torch.empty((2, 0), dtype=torch.long))
+       
+        graph_cpy = self.graph
 
         if deepcopy:
-            data = copy.deepcopy(data)    
+            graph_cpy = copy.deepcopy(self.graph)
+
+        # Convert from NetworkX to PyTorch Geometric Data
+        data = from_networkx(graph_cpy, group_node_attrs=attrs_to_keep)
+        data.x = data.x.float()
+        data.edge_index = data.edge_index.long()  
+
+        for key in list(data.keys()):
+            if key not in attrs_to_keep + ['edge_index']:
+                delattr(data, key)
 
         if keep_unique_edge:
             sorted_edges = torch.sort(data.edge_index, dim=0)[0]  # Sort each edge [min, max]
