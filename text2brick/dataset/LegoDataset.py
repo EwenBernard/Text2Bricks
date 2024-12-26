@@ -37,8 +37,7 @@ class LegoPretrainDataset(Dataset):
                         #TODO need to modify the dtype when changing the coord system to non int coords
                         current_graph = Data(
                             x = torch.empty(0, 2, dtype=torch.float),
-                            edge_index = torch.empty(2, 0, dtype=torch.long),  # No edges
-                            validity = torch.empty(0)
+                            edge_index = torch.empty(2, 0, dtype=torch.long)
                         )
                     
                     self.samples.append({
