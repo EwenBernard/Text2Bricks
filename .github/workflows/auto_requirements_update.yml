@@ -6,4 +6,6 @@ jobs:
     steps:
       - name: Automatic requirements.txt for Python Projects
         uses: ryan-rozario/pipreqs-action@v3.0.0
-
+        with:
+          PROJECT_PATH: project_folder
+          REQUIREMENT_PATH: project_folder/requirements.txt
