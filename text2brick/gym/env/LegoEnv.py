@@ -141,15 +141,15 @@ class LegoEnv(gym.Env):
 
     def start_3D_rendering(self, ldview_path):
         if not self.is_rendering_3D:
-                command = [ldview_path, f"-Polling=4", self.ldr_filename + ".ldr"]
-                print("Start 3D")
-                try:
-                    # Use Popen to start the subprocess without blocking
-                    self.ldview_process = subprocess.Popen(command)
-                except Exception as e:
-                    print(f"Can't open LDView: {e}")
-                else:
-                    self.is_rendering_3D = True
+            command = [ldview_path, f"-Polling=4", self.ldr_filename + ".ldr"]
+            print("Start 3D")
+            try:
+                # Use Popen to start the subprocess without blocking
+                self.ldview_process = subprocess.Popen(command)
+            except Exception as e:
+                print(f"Can't open LDView: {e}")
+            else:
+                self.is_rendering_3D = True
 
 
     def generate_random_action(self) -> Tuple[int, int]:

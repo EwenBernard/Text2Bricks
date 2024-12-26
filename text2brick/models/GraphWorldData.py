@@ -1,7 +1,8 @@
-from typing import List, Tuple
+from typing import Tuple
 import networkx as nx
 import torch_geometric
-from torch_geometric.utils.convert import from_networkx, to_networkx
+from torch_geometric.utils.convert import from_networkx
+from torch_geometric.data import Data
 import torch
 import numpy as np
 from collections import deque
@@ -299,7 +300,12 @@ class GraphLegoWorldData:
 
     def graph_to_torch(self, deepcopy=False, keep_unique_edge=False) -> torch_geometric.data.Data:
         
-        data = from_networkx(self.graph, group_node_attrs=['x', 'y'])
+        if self.graph.number_of_nodes() == 0:
+            # Create an empty Data object
+            data = Data(x=torch.empty((0, 2)), edge_index=torch.empty((2, 0), dtype=torch.float))
+        else:
+            # Convert from NetworkX to PyTorch Geometric Data
+            data = from_networkx(self.graph, group_node_attrs=['x', 'y'])
 
         if deepcopy:
             data = copy.deepcopy(data)    
