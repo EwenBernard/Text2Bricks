@@ -4,6 +4,10 @@ jobs:
  update-requirements:
     runs-on: ubuntu-latest
     steps:
+      - name: Print the current working directory
+        run: |
+          echo "Current working directory: $(pwd)"
+
       - name: Automatic requirements.txt for Python Projects
         uses: ryan-rozario/pipreqs-action@v3.0.0
         with:
