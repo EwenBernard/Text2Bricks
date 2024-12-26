@@ -6,7 +6,7 @@ from text2brick.gym.models.SNNImg import SNN
 from torch import nn
 
 class Text2Brick_v1(nn.Module):
-    def __init__(self, image_target=None, gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16, grid_size=(10, 10)): 
+    def __init__(self, image_target=None, grid_size=(224, 224), gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16): 
         """
         Initializes the text2brick v1.
 
@@ -41,10 +41,9 @@ class Text2Brick_v1(nn.Module):
         # Define the Position Head for 2D coords prediction
         self.position_head = PositionHead2D(
             mlp_output_dim=mlp_output_dim,
-            grid_size=grid_size
-        ) 
+            grid_size=grid_size) 
         
-    def forward(self, image_environement, gnn_input, reward, image_target=None):
+    def forward(self, image_environement, gnn_input, reward, image_target=None, return_logits=False):
         """
         Forward pass to compute the predicted position of the brick.
         
@@ -67,6 +66,6 @@ class Text2Brick_v1(nn.Module):
         mlp_output = self.mlp(image_difference, gnn_embeddings, reward)
         
         # Predict the position of the brick (either 2D or 3D)
-        predicted_position = self.position_head(mlp_output)
+        predicted_position = self.position_head(mlp_output, return_logits=return_logits)
         
         return predicted_position

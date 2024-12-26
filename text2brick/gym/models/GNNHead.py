@@ -61,7 +61,7 @@ class PositionHead2D(nn.Module):
             nn.Linear(128, grid_size[1])  # Classification logits for y-axis
         )
 
-    def forward(self, mlp_output):
+    def forward(self, mlp_output, return_logits=False):
         """
         Forward pass for position prediction.
         
@@ -75,6 +75,11 @@ class PositionHead2D(nn.Module):
         x_logits = self.position_x(mlp_output)
         y_logits = self.position_y(mlp_output)
 
+        # For training, return logits
+        if return_logits:
+            return x_logits, y_logits
+        
+        # Inference part
         # Predict indices using argmax
         x = torch.argmax(x_logits, dim=-1)  # Predicted x index
         y = torch.argmax(y_logits, dim=-1)  # Predicted y index
