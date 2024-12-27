@@ -10,6 +10,7 @@ import copy
 
 from text2brick.models import BRICK_UNIT
 
+
 """
 A class representing a LEGO world as a graph where each brick is a node.
 The graph structure is based on a 2D array (img), where each brick is represented by '1'.
@@ -49,17 +50,18 @@ class GraphLegoWorldData:
                 else:
                     x += 1  # Move to the next element
 
-        for brick_id1, data1 in graph.nodes(data=True):
-            x1, y1 = data1['x'], data1['y']
-            for brick_id2, data2 in graph.nodes(data=True):
-                if brick_id1 >= brick_id2:
-                    continue
-                x2, y2 = data2['x'], data2['y']
-                if self._check_connection(x1, y1, x2, y2):
-                    graph.add_edge(brick_id1, brick_id2)
+        if graph.number_of_nodes() == 0:
+            graph.add_node(0, x=-1, y=-1, saved=True, validity=True)
+        else:
+            for brick_id1, data1 in graph.nodes(data=True):
+                for brick_id2, data2 in graph.nodes(data=True):
+                    if brick_id1 >= brick_id2:
+                        continue
+                    if self._check_connection(data1, data2):
+                        graph.add_edge(brick_id1, brick_id2)
 
-        graph = self._propagate_brick_validity(graph)
-        self._remove_invalids(graph)
+            graph = self._propagate_brick_validity(graph)
+            self._remove_invalids(graph)
 
         return graph
     
@@ -73,6 +75,8 @@ class GraphLegoWorldData:
             np.ndarray: A 2D array where '1' represents part of a brick and '0' represents empty space.
         """
         table = np.zeros((self.world_dim[0], self.world_dim[1]), dtype=int)
+        if self._is_graph_empty():
+            return table
 
         # Populate the table based on the brick positions in the graph
         for _, data in self.graph.nodes(data=True):
@@ -125,6 +129,9 @@ class GraphLegoWorldData:
                 - False if the brick couldn't be added due to overlap, out-of-bounds placement, 
                 or causing the structure to become invalid.
         """
+        if self._is_graph_empty():
+            self.graph.remove_node(0)
+
         if self._check_overlap(x, y):
             print(f"Overlap: A brick already exists at ({x}, {y})")
             return False
@@ -137,8 +144,7 @@ class GraphLegoWorldData:
         
         # Update the edges (connections) between the new brick and its neighbors
         for neighbor_id, data in self.graph.nodes(data=True):
-            neighbor_x, neighbor_y = data['x'], data['y']
-            if self._check_connection(x, y, neighbor_x, neighbor_y):
+            if self._check_connection(self.graph.nodes[brick_id], data):
                 self.graph.add_edge(brick_id, neighbor_id)
 
         self._propagate_brick_validity(self.graph)
@@ -162,11 +168,18 @@ class GraphLegoWorldData:
         Returns:
             bool: True if the brick was successfully removed, False if no brick existed at the position.
         """
+        if self._is_graph_empty():
+            print("No brick to remove, graph is empty")
+            return False
+
         for node, data in self.graph.nodes(data=True):
             if data['x'] == x and data['y'] == y:
                 self.graph.remove_nodes_from([node])
                 self._propagate_brick_validity(self.graph)
                 self._remove_invalids(self.graph)
+                self._remove_disconnected_subgraphs()
+                if self.nodes_num() == 0:
+                    self._empty_world()
                 return True
 
         print(f"No brick found at ({x}, {y}) to remove.")
@@ -185,7 +198,7 @@ class GraphLegoWorldData:
             nx.Graph: The updated graph where all connected bricks to a valid brick are marked as valid.
         """
         valid_nodes = [node for node in graph.nodes if graph.nodes[node].get('validity', False)]     
-
+        # print('Valid nodes:', valid_nodes)
         if not valid_nodes:
             return graph
 
@@ -206,7 +219,7 @@ class GraphLegoWorldData:
         return graph
     
 
-    def _check_connection(self, x1: int, y1: int, x2: int, y2: int) -> bool:
+    def _check_connection(self, data1, data2) -> bool:
         """
         Checks whether two bricks are connected based on the following criteria:
         - The bricks are horizontally adjacent (width condition).
@@ -220,8 +233,8 @@ class GraphLegoWorldData:
             bool: True if the bricks are connected, False otherwise.
         """
         if (
-            abs(x1 - x2) < self.brick_dim[0]  # Width condition: bricks are horizontally adjacent
-            and abs(y1 - y2) == 1             # Height condition: bricks are vertically adjacent
+            abs(data1['x'] - data2['x']) < self.brick_dim[0]  # Width condition: bricks are horizontally adjacent
+            and abs(data1['y'] - data2['y']) == 1             # Height condition: bricks are vertically adjacent
         ):
             return True
         return False
@@ -258,6 +271,33 @@ class GraphLegoWorldData:
         """
         for _, data in self.graph.nodes(data=True):
             if (data['x'] == x or data['x'] + 1 == x or data['x'] == x + 1) and data['y'] == y:
+                return True
+        return False
+    
+
+    def _remove_disconnected_subgraphs(self):
+        # Find all connected components in the graph
+        connected_components = list(nx.connected_components(self.graph))
+        
+        # Loop through each connected component
+        for component in connected_components:
+            # Check if any node in the component has 'y == 0'
+            has_ground = any(self.graph.nodes[node].get('y') == 0 for node in component)
+            
+            # If the component does not have any node with 'y == 0', remove it
+            if not has_ground:
+                self.graph.remove_nodes_from(component)
+                print(f"Removed disconnected subgraph: {component}")
+    
+
+    def _empty_world(self):
+        self.graph.add_node(0, x=-1, y=-1, saved=True, validity=True)
+
+
+    def _is_graph_empty(self):
+        if self.nodes_num() == 1:
+            node = list(self.get_nodes())[0]
+            if node[1].get('x') == -1 and node[1].get('y') == -1:
                 return True
         return False
     
