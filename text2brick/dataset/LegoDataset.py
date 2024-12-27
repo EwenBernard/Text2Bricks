@@ -4,7 +4,7 @@ from torch_geometric.data import Batch, Data
 import os
 
 class LegoPretrainDataset(Dataset):
-    def __init__(self, dataset_dir: str):
+    def __init__(self, dataset_dir: str, sample_size: int = 50):
         """
         Args:
             dataset_dir (str): Path to the directory containing the dataset files.
@@ -13,12 +13,13 @@ class LegoPretrainDataset(Dataset):
         self.samples = []
 
         # Load and flatten all episodes
-        self._load_and_flatten_dataset()
+        self._load_and_flatten_dataset(sample_size=sample_size)
 
-    def _load_and_flatten_dataset(self):
+    def _load_and_flatten_dataset(self, sample_size=50):
         """
         Load dataset files and flatten episodes into independent samples.
         """
+        sample_counter = 0
         for file_name in os.listdir(self.dataset_dir):
             file_path = os.path.join(self.dataset_dir, file_name)
             if file_name.endswith('.pt'):
@@ -48,6 +49,9 @@ class LegoPretrainDataset(Dataset):
                         "reward": episode[2],
                         "current_graph": current_graph,
                     })
+                sample_counter += 1
+                if sample_counter >= sample_size:
+                    break
 
     def __len__(self):
         """
