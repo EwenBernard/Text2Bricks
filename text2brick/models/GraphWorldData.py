@@ -101,10 +101,19 @@ class GraphLegoWorldData:
             edge_bricks_data = [self.graph.nodes[node] for node in edge_bricks]
             return max(edge_bricks_data, key=lambda node: node["y"])
         
-        # If no edge bricks, consider all nodes and retrieve the one with the highest y
-        all_bricks_data = [self.graph.nodes[node] for node in self.graph.nodes]
-        return max(all_bricks_data, key=lambda node: node["y"])
-    
+        # # If no edge bricks, consider all nodes and retrieve the one with the highest y
+        # all_bricks_data = [self.graph.nodes[node] for node in self.graph.nodes]
+        # return max(all_bricks_data, key=lambda node: node["y"])
+        # If no edge bricks, find articulation points in the graph
+        articulation_points = set(nx.articulation_points(self.graph))
+        
+        # Consider all nodes and filter out the articulation points
+        non_articulation_bricks = [self.graph.nodes[node] for node in self.graph.nodes if node not in articulation_points]
+        
+        # If there are non-articulation bricks, return the one with the highest y-coordinate
+        if non_articulation_bricks:
+            return max(non_articulation_bricks, key=lambda node: node["y"])
+
 
     def add_brick(self, x: int, y: int) -> bool:
         """
@@ -177,10 +186,12 @@ class GraphLegoWorldData:
                 self.graph.remove_nodes_from([node])
                 self._propagate_brick_validity(self.graph)
                 self._remove_invalids(self.graph)
-                self._remove_disconnected_subgraphs()
+                if self._remove_disconnected_subgraphs():
+                    res = False
                 if self.nodes_num() == 0:
                     self._empty_world()
-                return True
+                res = True
+                return res
 
         print(f"No brick found at ({x}, {y}) to remove.")
         return False
@@ -278,7 +289,7 @@ class GraphLegoWorldData:
     def _remove_disconnected_subgraphs(self):
         # Find all connected components in the graph
         connected_components = list(nx.connected_components(self.graph))
-        
+        res = False
         # Loop through each connected component
         for component in connected_components:
             # Check if any node in the component has 'y == 0'
@@ -286,8 +297,14 @@ class GraphLegoWorldData:
             
             # If the component does not have any node with 'y == 0', remove it
             if not has_ground:
+                print(self.graph_to_table())
+            
                 self.graph.remove_nodes_from(component)
+                print(self.graph_to_table())
                 print(f"Removed disconnected subgraph: {component}")
+                res = True
+        return res
+
     
 
     def _empty_world(self):

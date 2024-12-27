@@ -33,14 +33,6 @@ class LegoPretrainDataset(Dataset):
                     current_graph.x = current_graph.x.float()
                     current_graph.edge_index = current_graph.edge_index.long()
 
-                    if current_graph.num_nodes == 0:
-                        # Create a valid empty graph
-                        #TODO need to modify the dtype when changing the coord system to non int coords
-                        current_graph = Data(
-                            x = torch.empty(0, 2, dtype=torch.float),
-                            edge_index = torch.empty(2, 0, dtype=torch.long)
-                        )
-                    
                     self.samples.append({
                         "target_image": target_image,
                         "initial_graph": initial_graph,
@@ -75,22 +67,3 @@ class LegoPretrainDataset(Dataset):
         """
         sample = self.samples[idx]
         return (sample["target_image"], sample["current_build_image"], sample["brick_to_add"], sample["reward"], sample["current_graph"])
-        #return sample["current_graph"]
-
-    # def custom_collate_fn(batch):
-    #     try:
-    #         # Stack fixed-size tensors
-    #         target_images = torch.stack([item[0] for item in batch])
-    #         current_build_images = torch.stack([item[1] for item in batch])
-    #         bricks_to_add = torch.stack([item[2] for item in batch])  # Shape [batch_size, 2]
-    #         rewards = torch.tensor([item[3].item() for item in batch], dtype=torch.float32)
-
-    #         # Batch graph data
-    #         current_graphs = Batch.from_data_list([item[4] for item in batch])
-
-    #         return (target_images, current_build_images, bricks_to_add, rewards, current_graphs)
-                
-    #     except Exception as e:
-    #         print("Error in custom collate function:")
-    #         print(f"Batch: {batch}")
-    #         raise e

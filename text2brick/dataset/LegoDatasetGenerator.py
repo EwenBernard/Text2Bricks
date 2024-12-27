@@ -7,6 +7,7 @@ from text2brick.gym import AbstractRewardFunc
 from text2brick.dataset.MNISTDataset import MNISTDataset
 from text2brick.dataset.Preprocessing import PreprocessImage
 
+
 class LegoDatasetGenerator:
     def __init__(self, output_dir: str = "./lego_dataset", reward_function: AbstractRewardFunc = None, sample_size: int = 50):
         self.mnist = MNISTDataset(sample_size=sample_size)
