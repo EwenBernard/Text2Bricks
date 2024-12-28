@@ -67,5 +67,5 @@ class Text2Brick_v1(nn.Module):
         
         # Predict the position of the brick (either 2D or 3D)
         predicted_position = self.position_head(mlp_output, return_logits=return_logits)
-        
+
         return predicted_position

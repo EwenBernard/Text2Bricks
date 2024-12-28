@@ -31,7 +31,7 @@ class LegoDatasetGenerator:
 
         for _ in range(lego_world.nodes_num()):
            
-            brick_to_remove = lego_world.get_brick_at_edge()
+            brick_to_remove = lego_world.get_brick_at_edge() 
             lego_world.remove_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
             current_image = lego_world.graph_to_table()
 

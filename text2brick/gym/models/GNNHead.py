@@ -78,7 +78,7 @@ class PositionHead2D(nn.Module):
         # For training, return logits
         if return_logits:
             return x_logits, y_logits
-        
+
         # Inference part
         # Predict indices using argmax
         x = torch.argmax(x_logits, dim=-1)  # Predicted x index
