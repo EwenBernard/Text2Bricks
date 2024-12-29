@@ -3,7 +3,6 @@ import torch
 from torch_geometric.data import Data
 import os
 from typing import Tuple
-from tqdm import tqdm
 
 
 class LegoPretrainDataset(Dataset):
@@ -17,7 +16,6 @@ class LegoPretrainDataset(Dataset):
 
         # Index files and episodes without fully loading them
         self._index_dataset(sample_size)
-        self.tqdm_bar = tqdm(total=len(self.sample_references), desc="Loading samples", position=0, leave=True)
 
     def _index_dataset(self, sample_size) -> None:
         """
@@ -55,8 +53,6 @@ class LegoPretrainDataset(Dataset):
                 - reward (Tensor): Reward value for the action.
                 - current_graph (torch_geometric.Data): Graph representation of the current state.
         """
-        self.tqdm_bar.update(1)
-
         file_path, episode_idx = self.sample_references[idx]
         data = torch.load(file_path, map_location='cpu')  # Load file lazily
 
