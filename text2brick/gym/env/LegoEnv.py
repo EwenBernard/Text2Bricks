@@ -93,8 +93,8 @@ class LegoEnv(gym.Env):
         # Place the brick in the environment
         is_brick_valid = self.lego_world.add_brick(col, row)
         
-        if is_brick_valid:
-            self.n_step += 1
+        #if is_brick_valid:
+        self.n_step += 1
 
         lego_world_array = self.get_obs()
 
@@ -106,6 +106,7 @@ class LegoEnv(gym.Env):
 
         info = {
             "validity": is_brick_valid,
+            "IoU": self.reward_func.iou,
             "steps": self.n_step,
             "brick": f"{col}, {row}"
         }
