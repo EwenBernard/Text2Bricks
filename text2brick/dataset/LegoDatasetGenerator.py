@@ -48,19 +48,19 @@ class LegoDatasetGenerator:
 
             reward = self.reward_function(array, current_image, 1)
 
+            iteration_entry = {
+                "current_image": self.preprocess_image(current_image),
+                "next_brick": torch.tensor([brick_to_remove.get("x"), brick_to_remove.get("y")]),
+                "reward": torch.tensor(reward),
+            }
+            
             if save_iteration_graph:
-                iteration_data.append({
-                    "current_image": self.preprocess_image(current_image),
-                    "next_brick": torch.tensor([brick_to_remove.get("x"), brick_to_remove.get("y")]),
-                    "reward": torch.tensor(reward),
-                    "current_graph": lego_world.graph_to_torch(deepcopy=True),
-                })
-            else:
-                iteration_data.append({
-                    "current_image": self.preprocess_image(current_image),
-                    "next_brick": torch.tensor([brick_to_remove.get("x"), brick_to_remove.get("y")]),
-                    "reward": torch.tensor(reward),
-                })
+                iteration_entry["current_graph"] = lego_world.graph_to_torch(deepcopy=True)
+            
+            iteration_data.append(iteration_entry)
+
+            # Release memory after use
+            del brick_to_remove, current_image
 
         # Update shared progress counter
         if progress_counter is not None:
@@ -75,7 +75,13 @@ class LegoDatasetGenerator:
         """
         Generates a batch of episodes for the given indices, updating the shared progress counter.
         """
-        return [self.generate(idx, progress_counter=progress_counter, save_iteration_graph=save_iteration_graph) for idx in indices]
+        batch_data = []
+        for idx in indices:
+            batch_data.append(self.generate(idx, progress_counter=progress_counter, save_iteration_graph=save_iteration_graph))
+        
+        # Release memory after batch is generated
+        del indices  # Free memory for batch indices
+        return batch_data
 
     def generate_dataset(self, num_samples: int, save_iteration_graph=True):
         """
@@ -110,4 +116,7 @@ class LegoDatasetGenerator:
 
                     # Ensure all processes complete
                     for future in futures:
-                        future.result()
+                        batch_data = future.result()
+                        batch_file = os.path.join(self.output_dir, f"batch_{futures.index(future)}.pt")
+                        torch.save(batch_data, batch_file)
+                        del batch_data  # Free memory after saving to disk
