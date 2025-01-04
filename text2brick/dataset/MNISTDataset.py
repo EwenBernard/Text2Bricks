@@ -12,7 +12,7 @@ class MNISTDataset:
     and modifying samples by truncating rows or columns.
     """
 
-    def __init__(self, sample_size: int = 1000, cache_dir: str = './tmp', caching=True) -> None:
+    def __init__(self, cache_dir: str = './tmp', caching=True) -> None:
         """
         Initializes the Dataset by loading the MNIST data from OpenML.
 
@@ -22,15 +22,13 @@ class MNISTDataset:
         if caching:
             memory = Memory(cache_dir)
             fetch_openml_cached = memory.cache(fetch_openml)
-            mnist = fetch_openml_cached('mnist_784', version=1) 
+            mnist = fetch_openml_cached('mnist_784', version=1)
         else:
             mnist = fetch_openml('mnist_784', version=1)
 
-        self.data = mnist.data[:sample_size]
-        self.labels = mnist.target[:sample_size]
+        self.data = mnist.data
 
-
-    def sample(self, sample_index=None, n_cols=None, n_rows=None) -> Tuple[np.array, Image.Image]:
+    def sample(self, sample_index=None, n_cols=None, n_rows=None) -> Tuple[np.array, Image.Image, int]:
         """
         Fetches a sample from the dataset, modifies it by truncating rows or columns if specified, 
         and converts it into an image.
@@ -41,9 +39,9 @@ class MNISTDataset:
             n_rows (int, optional): Number of topmost rows to truncate (set to zero). Defaults to None.
 
         Returns:
-            tuple: A tuple containing the binary array (28x28), its corresponding image object, label, and index.
+            tuple: A tuple containing the binary array (28x28), its corresponding image object, and index.
         """
-        array, label, index = self._sample_array(sample_index=sample_index)
+        array, index = self._sample_array(sample_index=sample_index)
 
         # Truncate specified number of columns by setting their values to 0
         if n_cols:
@@ -63,8 +61,7 @@ class MNISTDataset:
 
         image = array_to_image(array)
 
-        return array, image, label, index
-    
+        return array, image, index
 
     def _sample_array(self, sample_index=None):
         """
@@ -74,24 +71,22 @@ class MNISTDataset:
             sample_index (int, optional): Index of the sample to retrieve. Defaults to a random index.
 
         Returns:
-            tuple: The preprocessed binary array (28x28), its label, and the sample index.
+            tuple: The preprocessed binary array (28x28) and the sample index.
         """
-        if not sample_index: # If no index is provided, pick a random sample
+        if not sample_index:  # If no index is provided, pick a random sample
             sample_index = np.random.randint(0, self.data.shape[0])
         elif sample_index >= len(self.data):
             raise ValueError(
                 f"Index requested {sample_index} is out of range, the length of the dataset is {len(self.data)}"
             )
 
-        # Retrieve the flattened image and its label
+        # Retrieve the flattened image
         image = self.data.iloc[sample_index]
-        image_label = self.labels[sample_index]
 
         # Preprocess the image into binary 28x28 format
         image_array = self._preprocess_sample(image)
 
-        return image_array, image_label, sample_index
-
+        return image_array, sample_index
 
     def _preprocess_sample(self, image):
         """
