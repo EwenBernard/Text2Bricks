@@ -8,3 +8,5 @@ scikit_learn
 torch
 torch_geometric
 torchvision
+gym
+pandas
