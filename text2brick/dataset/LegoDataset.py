@@ -8,7 +8,7 @@ from queue import Queue
 
 
 class LegoPretrainDataset(Dataset):
-    def __init__(self, dataset_dir: str, sample_size: int = 3000, cache_size: int = 5) -> None:
+    def __init__(self, dataset_dir: str, cache_size: int = 5) -> None:
         """
         Args:
             dataset_dir (str): Path to the directory containing the dataset files.
@@ -24,7 +24,7 @@ class LegoPretrainDataset(Dataset):
         self.preloaded_condition = threading.Condition(self.cache_lock)  # Synchronization for preloading
 
         # Index files and episodes without fully loading them
-        self._index_dataset(sample_size)
+        self._index_dataset()
 
         # Start the preloading thread
         self._stop_event = threading.Event()
@@ -33,7 +33,7 @@ class LegoPretrainDataset(Dataset):
         self.preloader_thread.start()
         
 
-    def _index_dataset(self, sample_size) -> None:
+    def _index_dataset(self) -> None:
         """
         Index dataset files and episodes without fully loading them.
         """
@@ -45,9 +45,6 @@ class LegoPretrainDataset(Dataset):
                 
                 for episode_idx in range(len(data["iteration_data"])):
                     self.sample_references.append((file_path, episode_idx))
-                    sample_counter += 1
-                    if sample_counter >= sample_size:
-                        break
 
     def __len__(self) -> int:
         """
