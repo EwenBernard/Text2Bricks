@@ -5,7 +5,7 @@ import os
 from typing import Tuple
 import threading
 from queue import Queue
-
+from tqdm import tqdm
 
 class LegoPretrainDataset(Dataset):
     def __init__(self, dataset_dir: str, cache_size: int = 5) -> None:
@@ -37,8 +37,7 @@ class LegoPretrainDataset(Dataset):
         """
         Index dataset files and episodes without fully loading them.
         """
-        sample_counter = 0
-        for file_name in os.listdir(self.dataset_dir):
+        for file_name in tqdm(os.listdir(self.dataset_dir)):
             if file_name.endswith('.pt'):
                 file_path = os.path.join(self.dataset_dir, file_name)
                 data = torch.load(file_path, map_location='cpu')  # Load file metadata only
