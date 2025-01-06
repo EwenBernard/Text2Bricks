@@ -82,11 +82,11 @@ class LegoHDF5Dataset(Dataset):
             sample_idx, iter_idx = self._find_sample_and_iter(idx)
 
             # Load target image
-            target_image = h5_file["target_images"][sample_idx]
+            target_image = torch.tensor(h5_file["target_images"][sample_idx], dtype=torch.float32)
 
             # Load specific iteration data
             iteration_group = h5_file["iterations"][f"sample_{sample_idx}"][f"iteration_{iter_idx}"]
-            current_image = iteration_group["current_image"][:]
+            current_image = torch.tensor(iteration_group["current_image"][:], dtype=torch.float32)
             brick_to_remove = torch.tensor(iteration_group["brick_to_remove"][:], dtype=torch.float32)
             reward = torch.tensor(iteration_group["reward"][()], dtype=torch.float32)
 
