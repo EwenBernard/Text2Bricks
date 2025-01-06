@@ -73,7 +73,7 @@ class MNISTDataset:
         Returns:
             tuple: The preprocessed binary array (28x28) and the sample index.
         """
-        if not sample_index:  # If no index is provided, pick a random sample
+        if sample_index is None:  # If no index is provided, pick a random sample
             sample_index = np.random.randint(0, self.data.shape[0])
         elif sample_index >= len(self.data):
             raise ValueError(
