@@ -1,7 +1,7 @@
 from typing import Tuple
 import networkx as nx
 import torch_geometric
-from torch_geometric.utils.convert import from_networkx
+from torch_geometric.utils.convert import from_networkx, to_networkx
 from torch_geometric.data import Data
 import torch
 import numpy as np
@@ -355,7 +355,7 @@ class GraphLegoWorldData:
         return subgraph
     
 
-    def graph_to_torch(self, deepcopy=True, keep_unique_edge=False, attrs_to_keep=['x', 'y']) -> torch_geometric.data.Data:
+    def graph_to_torch(self, deepcopy=False, keep_unique_edge=False, attrs_to_keep=['x', 'y']) -> torch_geometric.data.Data:
         
         if self.graph.number_of_nodes() == 0:
             # Create an empty Data object
@@ -384,7 +384,7 @@ class GraphLegoWorldData:
     
 
     def torch_to_graph(self, data: torch_geometric.data.Data) -> nx.Graph:
-        return data.to_networkx()
+        return to_networkx(data)
     
 
     def graph_to_np(self) -> np.ndarray:

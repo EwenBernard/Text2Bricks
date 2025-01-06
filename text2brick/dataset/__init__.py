@@ -1,5 +1,4 @@
 from .MNISTDataset import MNISTDataset
-from .LegoDatasetGenerator import LegoDatasetGenerator
 from .Preprocessing import PreprocessImage
-from .LegoDataset import LegoPretrainDataset
-from .LegoMemmapDataset import LegoMemmapDataset
+from .LegoDatasetGeneratorHDF5 import LegoDatasetGeneratorHDF5
+from .LegoHDF5Dataset import LegoHDF5Dataset

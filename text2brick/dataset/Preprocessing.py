@@ -15,4 +15,3 @@ class PreprocessImage:
     def __call__(self, image: np.array):
         pil_image = Image.fromarray(image.astype('uint8'))
         return self.preprocess(pil_image)
-        
