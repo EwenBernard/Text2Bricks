@@ -10,3 +10,4 @@ torch_geometric
 torchvision
 gym
 pandas
+h5py
