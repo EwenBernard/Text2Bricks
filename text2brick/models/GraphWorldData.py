@@ -10,13 +10,12 @@ import copy
 
 from text2brick.models import BRICK_UNIT
 
-
-"""
-A class representing a LEGO world as a graph where each brick is a node.
-The graph structure is based on a 2D array (img), where each brick is represented by '1'.
-The class includes methods for creating the graph, adding bricks, checking connections, and updating the graph's validity.
-"""
 class GraphLegoWorldData:
+    """
+    A class representing a LEGO world as a graph where each brick is a node.
+    The graph structure is based on a 2D array (img), where each brick is represented by '1'.
+    The class includes methods for creating the graph, adding bricks, checking connections, and updating the graph's validity.
+    """
     graph : nx.Graph
     brick_dim : Tuple[int, int, int] = (2, 1, 2)
     world_dim : Tuple[int, int, int] = (10, 10, 1)
