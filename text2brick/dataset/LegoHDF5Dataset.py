@@ -131,7 +131,7 @@ class LegoHDF5Dataset(Dataset):
             iteration_group = self.h5_file["iterations"][f"sample_{sample_idx}"][f"iteration_{iter_idx}"]
 
         current_image = iteration_group["current_image"][:]
-        brick_to_remove = torch.tensor(iteration_group["brick_to_remove"], dtype=torch.float32)
+        brick_to_remove = torch.tensor(iteration_group["brick_to_remove"], dtype=torch.long)
         reward = torch.tensor(iteration_group["reward"], dtype=torch.float32)
 
         edges = iteration_group["edges"][:]
