@@ -99,10 +99,7 @@ class GraphLegoWorldData:
             # Retrieve full node data and find the one with the highest y
             edge_bricks_data = [self.graph.nodes[node] for node in edge_bricks]
             return max(edge_bricks_data, key=lambda node: node["y"])
-        
-        # # If no edge bricks, consider all nodes and retrieve the one with the highest y
-        # all_bricks_data = [self.graph.nodes[node] for node in self.graph.nodes]
-        # return max(all_bricks_data, key=lambda node: node["y"])
+
         # If no edge bricks, find articulation points in the graph
         articulation_points = set(nx.articulation_points(self.graph))
         

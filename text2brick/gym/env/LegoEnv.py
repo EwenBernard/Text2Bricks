@@ -26,6 +26,7 @@ class LegoEnv(gym.Env):
         self.dim = dim
         self.n_step = 0
         self.reward_func = reward_func
+        self.score = 0
         self.lego_world = None
 
         self.ldr_filename = ldr_filename
@@ -66,7 +67,7 @@ class LegoEnv(gym.Env):
             initial_state = np.zeros((self.dim[0], self.dim[1]), dtype=np.uint8)
 
         self.lego_world = GraphLegoWorldData(initial_state)
-        self.is_new = True
+        self.score = 0
 
         # Erase content or create ldr file
         with open(self.ldr_filename + ".ldr", "w") as file:
@@ -99,22 +100,24 @@ class LegoEnv(gym.Env):
         lego_world_array = self.get_obs()
 
         # Compute the reward using the reward function
-        reward = self.reward_func(world_img=lego_world_array, validity=is_brick_valid, *args, **kwargs)
+        reward, iou = self.reward_func(world_img=lego_world_array, validity=is_brick_valid, *args, **kwargs)
+        self.score += reward
 
         if self.n_step == max_step:
             done = True
 
         info = {
             "validity": is_brick_valid,
-            "IoU": self.reward_func.iou,
+            "IoU": iou,
+            "reward": reward,
             "steps": self.n_step,
             "brick": f"{col}, {row}"
         }
         
         lego_world_tensor = self.obs_as_tensor(lego_world_array)
-        reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(1)
+        score = torch.tensor([self.score], dtype=torch.float32).unsqueeze(1)
 
-        return lego_world_tensor, reward, done, info
+        return lego_world_tensor, score, done, info
     
     
     def render(self, print_obs=False):
