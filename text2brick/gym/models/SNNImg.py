@@ -64,8 +64,8 @@ class SNN(nn.Module):
     def _post_process(
             self,
             features: torch.Tensor,
-            normalize: bool = True,
-            amplification: bool = True,
+            normalize: bool = False,
+            amplification: bool = False,
             threshold_factor: float = 0.0,  # Multiplier for the threshold based on max value
             squeeze = False
             ) -> torch.Tensor:

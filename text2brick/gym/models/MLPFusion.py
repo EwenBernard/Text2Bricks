@@ -1,9 +1,16 @@
 from torch import nn
 import torch
+from typing import Tuple
 
 class MLP(nn.Module):
 
-    def __init__(self, f_fused_size, h_graph_size, hidden_dims=[128, 128, 128, 128]):
+    def __init__(
+            self,
+            f_fused_size: int,
+            h_graph_size: int,
+            hidden_dims: Tuple = [128, 128, 128, 128],
+            dropout_prob: float = 0.2
+            ) -> None:
         """
         Initialize the MLP with fixed input sizes for f_fused and h_graph, and customizable hidden layer dimensions.
 
@@ -21,6 +28,8 @@ class MLP(nn.Module):
         self.fc2 = nn.Linear(hidden_dims[0], hidden_dims[1])
         self.fc3 = nn.Linear(hidden_dims[1], hidden_dims[2])
         self.fc4 = nn.Linear(hidden_dims[2], hidden_dims[3])
+        self.dropout = nn.Dropout(p=dropout_prob) # Only effective during the training
+
 
     def forward(self, f_fused, h_graph, reward):
         """
@@ -41,28 +50,21 @@ class MLP(nn.Module):
         reward = reward.view(-1, 1).float() # [batch_size, 1]
 
         # Concatenate all inputs along the feature dimension
-        try:
-            combined_tensor = torch.cat([f_fused_flat, h_graph_flat, reward], dim=1)
-        except:
-            print(f"Shape of f_fused: {f_fused.shape}")
-            print(f"Shape of h_graph: {h_graph.shape}")
-            print(f"Shape of reward: {reward.shape}")
-            
-            print(f"Shape of f_fused_flat: {f_fused_flat.shape}")
-            print(f"Shape of h_graph_flat: {h_graph_flat.shape}")
-            print(f"Shape of reward_flat: {reward.shape}")
-            
-            print(h_graph)
-            return
-
+        combined_tensor = torch.cat([f_fused_flat, h_graph_flat, reward], dim=1)
 
         # Pass through the fully connected layers with ReLU activations
         x = self.fc1(combined_tensor)
         x = torch.relu(x)
+        x = self.dropout(x)
+
         x = self.fc2(x)
         x = torch.relu(x)
+        x = self.dropout(x)
+
         x = self.fc3(x)
         x = torch.relu(x)
+        x = self.dropout(x)
+
         x = self.fc4(x)
 
         return x
