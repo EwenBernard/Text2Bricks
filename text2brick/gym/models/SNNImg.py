@@ -1,8 +1,12 @@
 import torch
 from torch import nn
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+
 from text2brick.gym.models.CNNImg import CNN
 
 # Reference: https://medium.com/@rinkinag24/a-comprehensive-guide-to-siamese-neural-networks-3358658c0513
+
 
 class SNN(nn.Module):
     """
@@ -11,7 +15,7 @@ class SNN(nn.Module):
     features of a target image and an environment image.
     """
 
-    def __init__(self, image_target=None):
+    def __init__(self, image_target: torch.Tensor = None) -> None:
         """
         Initializes the SNN with a target image.
 
@@ -26,71 +30,100 @@ class SNN(nn.Module):
             self.target = self.cnn.forward(image_target)
 
 
-    def forward(self, image_environement, image_target=None):
+    def forward(
+            self,
+            image_environement: torch.Tensor,
+            image_target: torch.Tensor = None,
+            *args,
+            **kwargs
+            ) -> torch.Tensor:
         """
         Forward pass to compute similarity metrics between the target and environment images.
-
+        
         Args:
             image_environement (torch.Tensor): Environment image to compare, of shape [C, H, W].
-
+            image_target (torch.Tensor, optional): Target image to compare, of shape [C, H, W]. Default is None.
+            normalize (bool): Whether to normalize the feature vectors before comparison. Default is True.
+            amplification (bool): Whether to apply feature amplification (squaring the difference). Default is True.
+            
         Returns:
-            tuple: (cosine similarity, normalized Euclidean distance) between the target and environment image features.
+            torch.Tensor: Difference (or similarity) between the target and environment image features.
         """
         image_environement = self.cnn.forward(image_environement)
-        if self.target is None:
+
+        if self.target is None and image_target is not None:
             image_target = self.cnn.forward(image_target)
-            return image_target - image_environement
-        else:
-            return self.target - image_environement
+        elif self.target is not None:
+            image_target = self.cnn.forward(self.target)
+        
+        difference = image_target - image_environement
 
+        return self._post_process(difference, *args, **kwargs)
+    
 
-    def get_features(self):
+    def _post_process(
+            self,
+            features: torch.Tensor,
+            normalize: bool = True,
+            amplification: bool = True,
+            threshold_factor: float = 0.0,  # Multiplier for the threshold based on max value
+            squeeze = False
+            ) -> torch.Tensor:
         """
-        Get the extracted features for both the target and environment images.
-
+        Post-process the feature map by applying amplification, normalization, and thresholding.
+        
+        Args:
+            features (torch.Tensor): The feature tensor to process.
+            normalize (bool): Whether to normalize the feature tensor. Default is True.
+            amplification (bool): Whether to amplify (square) the feature differences. Default is True.
+            threshold_factor (float): Factor to calculate the threshold based on the max value of the feature map. Default is 0.1.
+            
         Returns:
-            tuple: (target features, environment features).
+            torch.Tensor: The processed feature tensor.
         """
-        return self.target, self.image_environement
+        if amplification:
+            features = features.pow(2)  # Amplify the features (square the difference)
+        
+        if normalize:
+            norm = features.norm(p=2, dim=1, keepdim=True) + 1e-10
+            features = features / norm  # Normalize the feature tensor
+        
+        # Calculate the threshold based on the maximum value in the feature map
+        if threshold_factor != 0:
+            max_value = features.abs().max()
+            threshold = threshold_factor * max_value  # Set threshold as 0.1 * max_value
+            features = torch.where(torch.abs(features) < threshold, torch.zeros_like(features), features)
+
+        if squeeze:
+            features = features.squeeze(0)
+            
+        return features
 
 
-    def _cosine_similarity(self, image1, image2):
+    def feature_map(self, features: torch.Tensor, title: str = "Feature map") -> None:
         """
-        Computes the cosine similarity between two feature maps.
+        Visualizes the combined feature map.
 
         Args:
-            image1 (torch.Tensor): First feature map of shape [C, H, W].
-            image2 (torch.Tensor): Second feature map of shape [C, H, W].
-
-        Returns:
-            float: Cosine similarity value between the two feature maps.
+            features (torch.Tensor): Feature map tensor of shape [H, W], where:
+                                    H - height of the feature map,
+                                    W - width of the feature map.
         """
-        # Flatten the feature maps into 1D tensors
-        image1_flat = image1.flatten(start_dim=0)
-        image2_flat = image2.flatten(start_dim=0)
 
-        similarity = torch.nn.functional.cosine_similarity(image1_flat.unsqueeze(0), image2_flat.unsqueeze(0))
-        return similarity.item()
+        if features.dim() == 3:
+            features = features.squeeze(0)
 
+        if features.dim() != 2:
+            raise ValueError(f"Expected a 2D tensor [H, W], but got shape {features.shape}")
 
-    def _distance_euclidean(self, image1, image2):
-        """
-        Computes the normalized Euclidean distance between two feature maps.
+        # Plot the feature map
+        fig, axe = plt.subplots(1, 1, figsize=(10, 10))
+        cax = axe.imshow(features, cmap='viridis')
+        axe.set_title(title)
+        axe.axis('off')  # Turn off axes for better visualization
 
-        Args:
-            image1 (torch.Tensor): First feature map of shape [C, H, W].
-            image2 (torch.Tensor): Second feature map of shape [C, H, W].
+        # Add a colorbar
+        cbar = fig.colorbar(cax, ax=axe, orientation='vertical', fraction=0.046, pad=0.04)
+        cbar.set_label('Feature Intensity')
 
-        Returns:
-            float: Normalized Euclidean distance.
-        """
-        # Flatten the feature maps into 1D tensors
-        image1_flat = image1.flatten(start_dim=0)
-        image2_flat = image2.flatten(start_dim=0)
-
-        # Normalize each feature map to unit length
-        image1_norm = image1_flat / image1_flat.norm()
-        image2_norm = image2_flat / image2_flat.norm()
-
-        distance = torch.norm(image1_norm - image2_norm, p=2)
-        return distance.item()
+        plt.show()

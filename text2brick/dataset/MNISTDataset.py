@@ -28,7 +28,7 @@ class MNISTDataset:
 
         self.data = mnist.data
 
-    def sample(self, sample_index=None, n_cols=None, n_rows=None) -> Tuple[np.array, Image.Image, int]:
+    def sample(self, sample_index: int = None, n_cols: int = None, n_rows: int = None) -> Tuple[np.array, Image.Image, int]:
         """
         Fetches a sample from the dataset, modifies it by truncating rows or columns if specified, 
         and converts it into an image.
@@ -63,7 +63,8 @@ class MNISTDataset:
 
         return array, image, index
 
-    def _sample_array(self, sample_index=None):
+
+    def _sample_array(self, sample_index: int = None) -> Tuple[np.array, int]:
         """
         Retrieves a single sample from the dataset and preprocesses it.
 
@@ -88,7 +89,8 @@ class MNISTDataset:
 
         return image_array, sample_index
 
-    def _preprocess_sample(self, image):
+
+    def _preprocess_sample(self, image: Image.Image) -> np.array:
         """
         Preprocesses a single sample by reshaping, reordering rows, and binarizing the pixel values.
 

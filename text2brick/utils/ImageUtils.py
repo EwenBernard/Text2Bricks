@@ -1,9 +1,16 @@
 from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
 
 def array_to_image(array: np.array) -> Image.Image:
-    array = np.where(array > 0, 255, 0).astype(np.uint8)
+    array = array.astype(np.uint8)
+    array = np.where(array > 0, 255, 0)
     return Image.fromarray(array, mode='L')
+
+
+def plot_image(array: np.array) -> None:
+    plt.imshow(array, cmap='gray')
+    plt.show()
 
 
 def image_upscale(image: Image.Image, scale_factor: int) -> Image.Image:

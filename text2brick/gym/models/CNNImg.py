@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 class CNN(nn.Module):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.model = torch.hub.load('pytorch/vision:v0.10.0', 'squeezenet1_0', weights="SqueezeNet1_0_Weights.IMAGENET1K_V1")
@@ -19,7 +19,7 @@ class CNN(nn.Module):
         self.parameters = sum(p.numel() for p in self.model.parameters())
 
 
-    def forward(self, input_tensor):
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         """
         Performs the forward pass by preprocessing the input image, running it through the model, 
         and returning the reduced 13x13 feature map.
@@ -38,11 +38,10 @@ class CNN(nn.Module):
         # Combine the channels into a 13x13 tensor
         output_13x13 = output.mean(dim=1)
 
-        #return output_13x13.squeeze(0)
         return output_13x13
 
     
-    def feature_map(self, features):
+    def feature_map(self, features: torch.Tensor) -> None:
         """
         Visualizes the combined feature map.
 
@@ -59,11 +58,11 @@ class CNN(nn.Module):
             raise ValueError(f"Expected a 2D tensor [H, W], but got shape {features.shape}")
 
         # Normalize the feature map to the range [0, 1]
-        features_normalized = (features - features.min()) / (features.max() - features.min())
+        #features = (features - features.min()) / (features.max() - features.min())
 
         # Plot the feature map
         fig, axe = plt.subplots(1, 1, figsize=(10, 10))
-        axe.imshow(features_normalized, cmap='viridis')
+        axe.imshow(features, cmap='viridis')
         axe.set_title("Feature map")
         axe.axis('off')  # Turn off axes for better visualization
         plt.show()

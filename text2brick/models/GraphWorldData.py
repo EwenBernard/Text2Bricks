@@ -301,7 +301,6 @@ class GraphLegoWorldData:
                 res = True
         return res
 
-    
 
     def _empty_world(self):
         self.graph.add_node(0, x=-1, y=-1, saved=True, validity=True)

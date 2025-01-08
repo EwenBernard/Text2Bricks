@@ -6,7 +6,7 @@ from text2brick.gym.models.SNNImg import SNN
 from torch import nn
 
 class Text2Brick_v1(nn.Module):
-    def __init__(self, image_target=None, grid_size=(224, 224), gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, mlp_hidden_dim=[128, 64, 32, 16], mlp_output_dim=16): 
+    def __init__(self, image_target=None, grid_size=(28, 28), gnn_node_feature_dim=2, gnn_hidden_dim=64, gnn_output_dim=64, mlp_hidden_dim=[128, 128, 128, 128], mlp_output_dim=128): 
         """
         Initializes the text2brick v1.
 

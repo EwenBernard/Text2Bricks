@@ -164,7 +164,7 @@ class LegoEnv(gym.Env):
         return self.lego_world.graph_to_table()
     
 
-    def obs_as_tensor(self, obs: np.array=None) -> torch.tensor:
+    def obs_as_tensor(self, obs: np.array=None) -> torch.Tensor:
         if obs is not None:
             arr = obs
         else:

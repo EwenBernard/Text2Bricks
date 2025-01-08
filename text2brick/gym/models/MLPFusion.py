@@ -3,7 +3,7 @@ import torch
 
 class MLP(nn.Module):
 
-    def __init__(self, f_fused_size, h_graph_size, hidden_dims=[128, 64, 32, 16]):
+    def __init__(self, f_fused_size, h_graph_size, hidden_dims=[128, 128, 128, 128]):
         """
         Initialize the MLP with fixed input sizes for f_fused and h_graph, and customizable hidden layer dimensions.
 
@@ -35,15 +35,10 @@ class MLP(nn.Module):
         Returns:
             torch.Tensor: The output of the final fully connected layer
         """
-
-
-
         # Flatten tensor starting from the second dimension
         f_fused_flat = f_fused.view(f_fused.size(0), -1).float()  # [batch_size, 13, 13]
         h_graph_flat = h_graph.view(h_graph.size(0), -1).float()  # [batch_size, gnn_output_dim]
         reward = reward.view(-1, 1).float() # [batch_size, 1]
-
-
 
         # Concatenate all inputs along the feature dimension
         try:

@@ -13,7 +13,7 @@ class AbstractRewardFunc(ABC):
 
 
 class IoUValidityRewardFunc(AbstractRewardFunc): 
-    def __init__(self, IoU_weight: float = 0.5 , validity_weight: float = 1.0):
+    def __init__(self, IoU_weight: float = 0.5 , validity_weight: float = 1.0) -> None:
         self.IoU_weight = IoU_weight
         self.validity_weight = validity_weight
 
@@ -47,7 +47,8 @@ class IoUValidityRewardFunc(AbstractRewardFunc):
 
     
     def __call__(
-            self, target_img: np.array,
+            self,
+            target_img: np.array,
             world_img: np.array,
             validity: int,
             center: Tuple[int, int] = None,
