@@ -33,11 +33,11 @@ class SNN(nn.Module):
 
         self.normalize = normalize
         self.amplification = amplification
-        self.ththreshold_factor = threshold_factor
+        self.threshold_factor = threshold_factor
         self.squeeze_output = squeeze_output
 
         self.ouput_size = (13, 13)
-        
+
         self.cnn = CNN()
         self.target = None
         if image_target is not None:
