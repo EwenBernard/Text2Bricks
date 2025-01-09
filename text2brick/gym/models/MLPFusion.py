@@ -2,6 +2,7 @@ from torch import nn
 import torch
 from typing import Tuple
 
+
 class MLP(nn.Module):
 
     def __init__(

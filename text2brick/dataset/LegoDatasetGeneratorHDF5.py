@@ -71,6 +71,7 @@ class LegoDatasetGeneratorHDF5:
 
         global_starting_index = self.iteration_count
         num_iterations = lego_world.nodes_num()
+        reward = 0
 
         # Process iterations
         iteration_group = self.h5_file["iterations"].create_group(f"sample_{idx}")
@@ -81,7 +82,7 @@ class LegoDatasetGeneratorHDF5:
 
             # Generate current image and compute reward
             current_image = lego_world.graph_to_table()
-            reward = self.reward_function(array, current_image, 1)
+            reward += self.reward_function(array, current_image, 1)[0]
 
             # Process current state
             edges, node_values = self._process_graph(lego_world)
