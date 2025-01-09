@@ -15,7 +15,14 @@ class SNN(nn.Module):
     features of a target image and an environment image.
     """
 
-    def __init__(self, image_target: torch.Tensor = None) -> None:
+    def __init__(
+            self,
+            image_target: torch.Tensor = None,
+            normalize: bool = False,
+            amplification: bool = False,
+            threshold_factor: float = 0.0,  # Multiplier for the threshold based on max value
+            squeeze_output = False
+            ) -> None:
         """
         Initializes the SNN with a target image.
 
@@ -24,6 +31,13 @@ class SNN(nn.Module):
         """
         super().__init__()
 
+        self.normalize = normalize
+        self.amplification = amplification
+        self.ththreshold_factor = threshold_factor
+        self.squeeze_output = squeeze_output
+
+        self.ouput_size = (13, 13)
+        
         self.cnn = CNN()
         self.target = None
         if image_target is not None:
@@ -61,14 +75,7 @@ class SNN(nn.Module):
         return self._post_process(difference, *args, **kwargs)
     
 
-    def _post_process(
-            self,
-            features: torch.Tensor,
-            normalize: bool = False,
-            amplification: bool = False,
-            threshold_factor: float = 0.0,  # Multiplier for the threshold based on max value
-            squeeze = False
-            ) -> torch.Tensor:
+    def _post_process(self, features: torch.Tensor) -> torch.Tensor:
         """
         Post-process the feature map by applying amplification, normalization, and thresholding.
         
@@ -81,20 +88,20 @@ class SNN(nn.Module):
         Returns:
             torch.Tensor: The processed feature tensor.
         """
-        if amplification:
+        if self.amplification:
             features = features.pow(2)  # Amplify the features (square the difference)
         
-        if normalize:
+        if self.normalize:
             norm = features.norm(p=2, dim=1, keepdim=True) + 1e-10
             features = features / norm  # Normalize the feature tensor
         
         # Calculate the threshold based on the maximum value in the feature map
-        if threshold_factor != 0:
+        if self.threshold_factor != 0:
             max_value = features.abs().max()
-            threshold = threshold_factor * max_value  # Set threshold as 0.1 * max_value
+            threshold = self.threshold_factor * max_value  # Set threshold as 0.1 * max_value
             features = torch.where(torch.abs(features) < threshold, torch.zeros_like(features), features)
 
-        if squeeze:
+        if self.squeeze_output:
             features = features.squeeze(0)
             
         return features
