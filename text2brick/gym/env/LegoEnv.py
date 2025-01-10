@@ -15,7 +15,12 @@ class LegoEnv(gym.Env):
     Custom Gym environment for Lego brick placement on a grid.
     """
 
-    def __init__(self, dim: Tuple[int, int], ldr_filename: str = "test_ldr", reward_func: AbstractRewardFunc = IoUValidityRewardFunc()):
+    def __init__(
+            self,
+            dim: Tuple[int, int],
+            ldr_filename: str = "test_ldr",
+            reward_func: AbstractRewardFunc = IoUValidityRewardFunc()
+            ) -> None:
         """
         Initialize the Lego environment.
         
@@ -43,7 +48,7 @@ class LegoEnv(gym.Env):
         self.reset()
 
 
-    def __str__(self):
+    def __str__(self) -> None:
         return (
             f"LegoEnv(Environment Size: {self.dim[0]}x{self.dim[1]}, \n"
             f"Observation Space: {self.observation_space}, \n"
@@ -52,7 +57,7 @@ class LegoEnv(gym.Env):
         )
 
 
-    def reset(self, initial_state: np.array = None):
+    def reset(self, initial_state: np.array = None) -> None:
         """
         Reset the environment to the initial state.
         
@@ -68,6 +73,7 @@ class LegoEnv(gym.Env):
 
         self.lego_world = GraphLegoWorldData(initial_state)
         self.score = 0
+        self.reward_func.last_iou = 0
 
         # Erase content or create ldr file
         with open(self.ldr_filename + ".ldr", "w") as file:
@@ -100,7 +106,13 @@ class LegoEnv(gym.Env):
         lego_world_array = self.get_obs()
 
         # Compute the reward using the reward function
-        reward, iou = self.reward_func(world_img=lego_world_array, validity=is_brick_valid, *args, **kwargs)
+        reward, iou = self.reward_func(
+                        world_img=lego_world_array,
+                        validity=is_brick_valid,
+                        center=kwargs.get("center", None),
+                        roi_size=kwargs.get("roi_size", 0)
+                        )
+        
         self.score += reward
 
         if self.n_step == max_step:
@@ -120,7 +132,7 @@ class LegoEnv(gym.Env):
         return lego_world_tensor, score, done, info
     
     
-    def render(self, print_obs=False):
+    def render(self, print_obs: bool = False) -> None:
         # Save the LDraw file
         self.lego_world.save_as_ldraw(self.ldr_filename)
 
@@ -129,7 +141,7 @@ class LegoEnv(gym.Env):
             print(self.get_obs())
 
 
-    def close(self):
+    def close(self) -> None:
         if self.is_rendering_3D:
             try:
                 self.ldview_process.terminate()  # Sends SIGTERM (soft kill)
@@ -143,7 +155,7 @@ class LegoEnv(gym.Env):
             self.is_rendering_3D = False
 
 
-    def start_3D_rendering(self, ldview_path):
+    def start_3D_rendering(self, ldview_path: str) -> None:
         if not self.is_rendering_3D:
             command = [ldview_path, f"-Polling=4", self.ldr_filename + ".ldr"]
             print("Start 3D")
@@ -174,5 +186,5 @@ class LegoEnv(gym.Env):
         return preprocess(arr).unsqueeze(0)
 
 
-    def set_reward_function(self, reward_func: AbstractRewardFunc):
+    def set_reward_function(self, reward_func: AbstractRewardFunc) -> None:
         self.reward_func = reward_func

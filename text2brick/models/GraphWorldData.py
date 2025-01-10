@@ -7,6 +7,7 @@ import torch
 import numpy as np
 from collections import deque
 import copy
+import random
 
 from text2brick.models import BRICK_UNIT
 
@@ -111,7 +112,7 @@ class GraphLegoWorldData:
             return max(non_articulation_bricks, key=lambda node: node["y"])
 
 
-    def add_brick(self, x: int, y: int) -> bool:
+    def add_brick(self, x: int, y: int, debug: bool = True) -> bool:
         """
         Adds a new brick to the graph at the specified (x, y) coordinates, if possible.
         
@@ -138,14 +139,18 @@ class GraphLegoWorldData:
             self.graph.remove_node(0)
 
         if self._check_overlap(x, y):
-            print(f"Overlap: A brick already exists at ({x}, {y})")
+            if debug:
+                print(f"Overlap: A brick already exists at ({x}, {y})")
             return False
-        if x + 1 >= self.world_dim[1] or y >= self.world_dim[0]:
-            print(f"Outside: Brick at ({x}, {y}) is out of the world")
+        if self._check_world_dimension(x, y):
+            if debug:
+                print(f"Outside: Brick at ({x}, {y}) is out of the world")
             return False
 
         brick_id = len(self.graph.nodes) 
-        self.graph.add_node(brick_id, x=x, y=y, saved=False, validity=True if y == 0 else False)
+        validity = True if y == 0 else False
+        
+        self.graph.add_node(brick_id, x=x, y=y, saved=False, validity=validity)
         
         # Update the edges (connections) between the new brick and its neighbors
         for neighbor_id, data in self.graph.nodes(data=True):
@@ -153,15 +158,19 @@ class GraphLegoWorldData:
                 self.graph.add_edge(brick_id, neighbor_id)
 
         self._propagate_brick_validity(self.graph)
+        print(self.graph.nodes[brick_id]['validity'])
 
         if self._remove_invalids(self.graph):
-            print(f"Invalid: Brick at ({x}, {y})")
+            if debug:
+                print(f"Invalid: Brick at ({x}, {y})")
             return False
 
+        if debug:
+            print(f"Added brick at ({x}, {y})")
         return True
     
 
-    def remove_brick(self, x: int, y: int) -> bool:
+    def remove_brick(self, x: int, y: int, debug: bool = True) -> bool:
         """
         Removes a brick located at the specified (x, y) position from the graph.
         After removal, it propagates validity and removes any bricks that become invalid.
@@ -174,7 +183,8 @@ class GraphLegoWorldData:
             bool: True if the brick was successfully removed, False if no brick existed at the position.
         """
         if self._is_graph_empty():
-            print("No brick to remove, graph is empty")
+            if debug:
+                print("No brick to remove, graph is empty")
             return False
 
         for node, data in self.graph.nodes(data=True):
@@ -182,15 +192,46 @@ class GraphLegoWorldData:
                 self.graph.remove_nodes_from([node])
                 self._propagate_brick_validity(self.graph)
                 self._remove_invalids(self.graph)
-                if self._remove_disconnected_subgraphs():
+                if self._remove_disconnected_subgraphs(debug=debug):
                     res = False
                 if self.nodes_num() == 0:
                     self._empty_world()
                 res = True
+                if debug:
+                    print(f"Removed brick at ({x}, {y})")
                 return res
 
-        print(f"No brick found at ({x}, {y}) to remove.")
+        if debug:
+            print(f"No brick found at ({x}, {y}) to remove.")
+        
         return False
+    
+    
+    def get_random_invalid_position(self) -> dict:
+        """
+        Generate a random invalid position within the world dimensions.
+
+        This function repeatedly generates random coordinates and checks if they
+        are invalid based on certain conditions (overlap, world dimension, and 
+        connection to other nodes). An invalid position is returned once found.
+
+        Returns:
+            dict: A dictionary with 'x' and 'y' keys representing the invalid position.
+        """
+        while True:
+            coord = {
+                'x': random.randint(1, self.world_dim[1]),
+                'y': random.randint(1, self.world_dim[0])
+            }
+
+            if (self._check_overlap(coord['x'], coord['y'])
+               or not self._check_world_dimension(coord['x'], coord['y'])):
+                    return coord
+
+            for _, data in self.get_nodes():
+                if self._check_connection(data, coord):
+                    continue
+            return coord
 
 
     def _propagate_brick_validity(self, graph: nx.Graph) -> nx.Graph:
@@ -240,12 +281,21 @@ class GraphLegoWorldData:
             bool: True if the bricks are connected, False otherwise.
         """
         if (
-            abs(data1['x'] - data2['x']) < self.brick_dim[0]  # Width condition: bricks are horizontally adjacent
+            abs(data1['x'] - data2['x']) <= 1                  # Width condition: bricks are horizontally adjacent
             and abs(data1['y'] - data2['y']) == 1             # Height condition: bricks are vertically adjacent
         ):
             return True
         return False
     
+
+    def _check_world_dimension(self, x: int, y: int) -> bool:
+        if(
+            x + 1 >= self.world_dim[1] or x < 0
+            or y >= self.world_dim[0] or y < 0
+        ):
+            return True
+        return False
+
     
     def _remove_invalids(self, graph: nx.Graph) -> bool:
         """
@@ -276,13 +326,13 @@ class GraphLegoWorldData:
         Returns:
             bool: True if there is overlap (another brick exists at or adjacent to the position), False otherwise.
         """
-        for _, data in self.graph.nodes(data=True):
+        for _, data in self.get_nodes():
             if (data['x'] == x or data['x'] + 1 == x or data['x'] == x + 1) and data['y'] == y:
                 return True
         return False
     
 
-    def _remove_disconnected_subgraphs(self):
+    def _remove_disconnected_subgraphs(self, debug: bool = True) -> None:
         # Find all connected components in the graph
         connected_components = list(nx.connected_components(self.graph))
         res = False
@@ -293,20 +343,22 @@ class GraphLegoWorldData:
             
             # If the component does not have any node with 'y == 0', remove it
             if not has_ground:
-                print(self.graph_to_table())
-            
+                if debug:
+                    print(self.graph_to_table())
+
                 self.graph.remove_nodes_from(component)
-                print(self.graph_to_table())
-                print(f"Removed disconnected subgraph: {component}")
+                if debug:
+                    print(self.graph_to_table())
+                    print(f"Removed disconnected subgraph: {component}")
                 res = True
         return res
 
 
-    def _empty_world(self):
+    def _empty_world(self) -> None:
         self.graph.add_node(0, x=-1, y=-1, saved=True, validity=True)
 
 
-    def _is_graph_empty(self):
+    def _is_graph_empty(self) -> bool:
         if self.nodes_num() == 1:
             node = list(self.get_nodes())[0]
             if node[1].get('x') == -1 and node[1].get('y') == -1:
@@ -314,11 +366,11 @@ class GraphLegoWorldData:
         return False
     
 
-    def nodes_num(self):
+    def nodes_num(self) -> int:
         return self.graph.number_of_nodes()
     
 
-    def edges_num(self):
+    def edges_num(self) -> int:
         return self.graph.number_of_edges()
     
 
@@ -339,7 +391,7 @@ class GraphLegoWorldData:
             print(f"Edge ({u}, {v}): {data}")
 
 
-    def subgraph(self, nodes_num):
+    def subgraph(self, nodes_num) -> nx.Graph:
         if nodes_num > self.graph.number_of_nodes():
             raise ValueError(f"Requested {nodes_num} nodes, but the graph only has {self.graph.number_of_nodes()} nodes.")
 

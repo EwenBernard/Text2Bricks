@@ -3,6 +3,7 @@ import numpy as np
 import h5py
 from tqdm import tqdm
 from typing import Tuple
+import random
 
 from text2brick.models import GraphLegoWorldData
 from text2brick.gym import AbstractRewardFunc
@@ -15,7 +16,8 @@ class LegoDatasetGeneratorHDF5:
         reward_function: AbstractRewardFunc = None,
         num_samples: int = 1000,
         image_shape: Tuple[int, int] = (28, 28),
-        min_node_count: int = 40
+        min_node_count: int = 40,
+        random_next_node_frequency: float = 0.3
     ):
         self.mnist = MNISTDataset()
         self.output_file = output_file
@@ -23,6 +25,7 @@ class LegoDatasetGeneratorHDF5:
         self.num_samples = num_samples
         self.image_shape = image_shape
         self.min_node_count = min_node_count
+        self.random_next_node_frequency = random_next_node_frequency
         self.iteration_count = 0 
 
     def _initialize_hdf5(self):
@@ -50,6 +53,7 @@ class LegoDatasetGeneratorHDF5:
     def _process_graph(self, lego_world: GraphLegoWorldData):
         data = lego_world.graph_to_torch()
         return data.edge_index.numpy(), data.x.numpy()
+    
 
     def generate_sample(self, mnist_idx: int, idx: int):
         """
@@ -72,23 +76,34 @@ class LegoDatasetGeneratorHDF5:
         global_starting_index = self.iteration_count
         num_iterations = lego_world.nodes_num()
         reward = 0
+        self.reward_function.last_iou = 0
+        i = 0
+        random_count = 0
 
         # Process iterations
         iteration_group = self.h5_file["iterations"].create_group(f"sample_{idx}")
-        for i in range(num_iterations):
-            # Get and remove brick
-            brick_to_remove = lego_world.get_brick_at_edge()
-            lego_world.remove_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
+
+        while i < num_iterations:
+            if random.random() < self.random_next_node_frequency: # Invalid brick
+                validity = False
+                brick_to_remove = lego_world.get_random_invalid_position()
+                i -= 1
+                random_count += 1
+                # TODO: Valid but decrease iou growth
+            else: # Valid brick
+                brick_to_remove = lego_world.get_brick_at_edge()
+                lego_world.remove_brick(brick_to_remove.get("x"), brick_to_remove.get("y"), debug=False)
+                validity = True
 
             # Generate current image and compute reward
             current_image = lego_world.graph_to_table()
-            reward += self.reward_function(array, current_image, 1)[0]
+            reward += self.reward_function(array, current_image, validity)[0]
 
             # Process current state
             edges, node_values = self._process_graph(lego_world)
 
             # Store iteration data
-            iter_data = iteration_group.create_group(f"iteration_{i}")
+            iter_data = iteration_group.create_group(f"iteration_{i + random_count}")
             iter_data.create_dataset("current_image", data=current_image, dtype=np.float32)
             iter_data.create_dataset(
                 "brick_to_remove", 
@@ -98,6 +113,8 @@ class LegoDatasetGeneratorHDF5:
             iter_data.create_dataset("reward", data=reward, dtype=np.float32)
             iter_data.create_dataset("edges", data=edges, dtype=np.int32)
             iter_data.create_dataset("node_values", data=node_values, dtype=np.float32)
+
+            i += 1
 
         # Update iteration count and index table
         global_ending_index = global_starting_index + num_iterations

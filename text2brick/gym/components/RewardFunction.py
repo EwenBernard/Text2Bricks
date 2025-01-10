@@ -16,6 +16,7 @@ class IoUValidityRewardFunc(AbstractRewardFunc):
     def __init__(self, IoU_weight: float = 0.5 , validity_weight: float = 1.0) -> None:
         self.IoU_weight = IoU_weight
         self.validity_weight = validity_weight
+        self.last_iou = 0
 
     def __str__(self):
         return f"Reward function : {self.IoU_weight}*IoU + {self.validity_weight}*validity"
@@ -72,10 +73,10 @@ class IoUValidityRewardFunc(AbstractRewardFunc):
             target_img = self._crop(target_img, center, roi_size)
             world_img = self._crop(world_img, center, roi_size)
 
-        iou = IoU(target_img, world_img)
+        iou_diff = IoU(target_img, world_img) - self.last_iou
 
         # Set validity to -1 if invalid, otherwise 1
         validity = -1 if not validity else 1
 
-        reward = self.IoU_weight * iou + self.validity_weight * validity
-        return reward, iou
+        reward = self.IoU_weight * iou_diff + self.validity_weight * validity
+        return reward, iou_diff

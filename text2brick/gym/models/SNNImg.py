@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 
 from text2brick.gym.models.CNNImg import CNN
 
@@ -28,6 +27,10 @@ class SNN(nn.Module):
 
         Args:
             image_target (torch.Tensor): Target image to compare with, of shape [C, H, W].
+            normalize (bool): Whether to normalize the feature tensor. Default is True.
+            amplification (bool): Whether to amplify (square) the feature differences. Default is True.
+            threshold_factor (float): Factor to calculate the threshold based on the max value of the feature map. Default is 0.1.
+            
         """
         super().__init__()
 
@@ -44,13 +47,7 @@ class SNN(nn.Module):
             self.target = self.cnn.forward(image_target)
 
 
-    def forward(
-            self,
-            image_environement: torch.Tensor,
-            image_target: torch.Tensor = None,
-            *args,
-            **kwargs
-            ) -> torch.Tensor:
+    def forward(self, image_environement: torch.Tensor, image_target: torch.Tensor = None) -> torch.Tensor:
         """
         Forward pass to compute similarity metrics between the target and environment images.
         
@@ -72,7 +69,7 @@ class SNN(nn.Module):
         
         difference = image_target - image_environement
 
-        return self._post_process(difference, *args, **kwargs)
+        return self._post_process(difference)
     
 
     def _post_process(self, features: torch.Tensor) -> torch.Tensor:
@@ -81,10 +78,6 @@ class SNN(nn.Module):
         
         Args:
             features (torch.Tensor): The feature tensor to process.
-            normalize (bool): Whether to normalize the feature tensor. Default is True.
-            amplification (bool): Whether to amplify (square) the feature differences. Default is True.
-            threshold_factor (float): Factor to calculate the threshold based on the max value of the feature map. Default is 0.1.
-            
         Returns:
             torch.Tensor: The processed feature tensor.
         """
