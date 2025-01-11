@@ -19,7 +19,7 @@ class IoUValidityRewardFunc(AbstractRewardFunc):
         self.last_iou = 0
 
     def __str__(self):
-        return f"Reward function : {self.IoU_weight}*IoU + {self.validity_weight}*validity"
+        return f"Reward function : {self.IoU_weight}*(IoU - last_IoU) + {self.validity_weight}*validity"
     
 
     def _crop(self, img: np.array, center: Tuple[int, int], roi_size: int) -> np.array:
@@ -67,7 +67,7 @@ class IoUValidityRewardFunc(AbstractRewardFunc):
         roi_size (int, optional): The size of the square ROI to crop.
 
         Returns:
-        Tuple[float, float]: The calculated reward and IoU.
+        Tuple[float, float]: The calculated reward and IoU growth.
         """
         if center is not None and roi_size > 0:
             target_img = self._crop(target_img, center, roi_size)

@@ -75,7 +75,7 @@ class GraphLegoWorldData:
             np.ndarray: A 2D array where '1' represents part of a brick and '0' represents empty space.
         """
         table = np.zeros((self.world_dim[0], self.world_dim[1]), dtype=int)
-        if self._is_graph_empty():
+        if self.is_world_empty():
             return table
 
         # Populate the table based on the brick positions in the graph
@@ -112,7 +112,7 @@ class GraphLegoWorldData:
             return max(non_articulation_bricks, key=lambda node: node["y"])
 
 
-    def add_brick(self, x: int, y: int, debug: bool = True) -> bool:
+    def add_brick(self, x: int, y: int, debug: bool = False) -> bool:
         """
         Adds a new brick to the graph at the specified (x, y) coordinates, if possible.
         
@@ -135,7 +135,7 @@ class GraphLegoWorldData:
                 - False if the brick couldn't be added due to overlap, out-of-bounds placement, 
                 or causing the structure to become invalid.
         """
-        if self._is_graph_empty():
+        if self.is_world_empty():
             self.graph.remove_node(0)
 
         if self._check_overlap(x, y):
@@ -158,7 +158,6 @@ class GraphLegoWorldData:
                 self.graph.add_edge(brick_id, neighbor_id)
 
         self._propagate_brick_validity(self.graph)
-        print(self.graph.nodes[brick_id]['validity'])
 
         if self._remove_invalids(self.graph):
             if debug:
@@ -170,7 +169,7 @@ class GraphLegoWorldData:
         return True
     
 
-    def remove_brick(self, x: int, y: int, debug: bool = True) -> bool:
+    def remove_brick(self, x: int, y: int, debug: bool = False) -> bool:
         """
         Removes a brick located at the specified (x, y) position from the graph.
         After removal, it propagates validity and removes any bricks that become invalid.
@@ -182,7 +181,7 @@ class GraphLegoWorldData:
         Returns:
             bool: True if the brick was successfully removed, False if no brick existed at the position.
         """
-        if self._is_graph_empty():
+        if self.is_world_empty():
             if debug:
                 print("No brick to remove, graph is empty")
             return False
@@ -206,8 +205,61 @@ class GraphLegoWorldData:
         
         return False
     
+
+    def _validity_mask(self) -> Tuple[np.array, np.array]:
+        """
+        Generates a validity mask for all positions in the world where a brick can be added.
+
+        This method returns a 2D numpy array where each entry is:
+        - 1 if a brick can be added at that position.
+        - 0 if a brick cannot be added at that position.
+
+        Returns:
+            np.ndarray: A 2D array representing valid positions for brick placement.
+        """
+        mask = np.zeros((self.world_dim[0], self.world_dim[1]), dtype=int)
+        min_x, max_x, _, max_y = self._min_max_x_y()
+        placed_bricks = self._placed_brick()
+
+        for y in range(self.world_dim[0]):
+            for x in range(self.world_dim[1]):
+                
+                # Don't process when x or y is too far from the 
+                if (x + 2 <= min_x or x - 2 >= max_x and y > 0) or y - 2 >= max_y:
+                    continue
+
+                # Skip if there is already a brick or the position is out of bounds
+                if (x, y) in placed_bricks or self._check_world_dimension(x, y):
+                    continue
+
+                # Temporarily add the brick to check validity
+                brick_id = len(self.graph.nodes)  # Get new brick ID
+                self.graph.add_node(brick_id, x=x, y=y, saved=False, validity=True if y == 0 else False)
+
+                # Update the graph by adding edges between the new brick and its neighbors
+                for neighbor_id, data in self.graph.nodes(data=True):
+                    if self._check_connection(self.graph.nodes[brick_id], data):
+                        self.graph.add_edge(brick_id, neighbor_id)
+
+                # Propagate validity after adding the brick
+                self._propagate_brick_validity(self.graph)
+
+                # Check if the brick placement keeps the structure valid
+                if not self._remove_invalids(self.graph):
+                    # If the graph is still valid, mark the position as valid for placement
+                    mask[self.world_dim[0] - 1 - y, x] = 1
+
+                # Safely remove the temporarily added brick
+                if brick_id in self.graph:
+                    self.graph.remove_node(brick_id)
+        
+        valid_coord = np.column_stack(np.where(mask == 1))
+        valid_coord[:, 0] = mask.shape[0] - valid_coord[:, 0] - 1
+
+        return mask, valid_coord[:, [1, 0]]
+
     
-    def get_random_invalid_position(self) -> dict:
+    def random_invalid_position(self, increase_dim: int = 0) -> dict: # To use for dataset generator
         """
         Generate a random invalid position within the world dimensions.
 
@@ -218,20 +270,52 @@ class GraphLegoWorldData:
         Returns:
             dict: A dictionary with 'x' and 'y' keys representing the invalid position.
         """
+        placed_bricks = self._placed_brick()
+
         while True:
             coord = {
-                'x': random.randint(1, self.world_dim[1]),
-                'y': random.randint(1, self.world_dim[0])
+                'x': random.randint(0 - increase_dim, self.world_dim[1] + increase_dim),
+                'y': random.randint(0 - increase_dim, self.world_dim[0] + increase_dim)
             }
 
-            if (self._check_overlap(coord['x'], coord['y'])
-               or not self._check_world_dimension(coord['x'], coord['y'])):
-                    return coord
+            if ((coord['x'], coord['y'] not in placed_bricks)
+                or not self._check_world_dimension(coord['x'], coord['y'])):
+                return coord
+
+            if coord['y'] == 0:
+                continue
 
             for _, data in self.get_nodes():
                 if self._check_connection(data, coord):
                     continue
             return coord
+        
+    
+    def not_matching_pos(self, target: np.array) -> dict:
+        """
+        Finds the coordinates of a valid position that does not match the target array at a random index.
+        
+        This function identifies positions in the world where a brick can be placed (valid positions) 
+        but do not match the target array (i.e., the target array has a value of 0 at those positions). 
+        It then randomly selects one of these positions and returns its coordinates.
+
+        Args:
+            target (np.array): The target array to compare against. It contains 0s and 1s, where 0 represents 
+                                an invalid position (or a mismatch) and 1 represents a valid position (matching).
+
+        Returns:
+            dict: A dictionary containing the 'x' and 'y' coordinates of a randomly selected non-matching position.
+                - 'x': The x-coordinate of the position.
+                - 'y': The y-coordinate of the position (adjusted for the world coordinate system).
+        """
+        valid_mask, _ = self._validity_mask()
+        not_matching_pos = np.column_stack(np.where((valid_mask == 1) & (target == 0))) # Valid positions but not matching the target
+        index = random.randint(0, not_matching_pos.shape[0] - 1)
+        not_matching_pos = not_matching_pos[index, :]
+
+        return {'x': not_matching_pos[1],
+                'y': target.shape[0] - not_matching_pos[0] - 1
+                }
 
 
     def _propagate_brick_validity(self, graph: nx.Graph) -> nx.Graph:
@@ -289,6 +373,23 @@ class GraphLegoWorldData:
     
 
     def _check_world_dimension(self, x: int, y: int) -> bool:
+        """
+        Checks if the given coordinates (x, y) are within the valid world dimensions.
+        
+        This function verifies if the provided x and y coordinates are within the boundaries 
+        of the world. The valid dimensions are determined by the world dimensions, where x 
+        should be between 0 and `self.world_dim[1] - 1`, and y should be between 0 and 
+        `self.world_dim[0] - 1`.
+
+        Args:
+            x (int): The x-coordinate to check.
+            y (int): The y-coordinate to check.
+
+        Returns:
+            bool: 
+                - True if the coordinates are out of bounds (either x or y is outside the valid range).
+                - False if the coordinates are within the valid world dimensions.
+        """
         if(
             x + 1 >= self.world_dim[1] or x < 0
             or y >= self.world_dim[0] or y < 0
@@ -333,6 +434,16 @@ class GraphLegoWorldData:
     
 
     def _remove_disconnected_subgraphs(self, debug: bool = True) -> None:
+        """
+        Removes disconnected subgraphs from the main graph. A subgraph is considered disconnected if 
+        it does not contain any node with 'y == 0' (which represents ground level).
+        
+        Args:
+            debug (bool, optional): If True, prints debug information about the graph before and after removal.
+        
+        Returns:
+            bool: True if any disconnected subgraphs were removed, False otherwise.
+        """
         # Find all connected components in the graph
         connected_components = list(nx.connected_components(self.graph))
         res = False
@@ -352,13 +463,53 @@ class GraphLegoWorldData:
                     print(f"Removed disconnected subgraph: {component}")
                 res = True
         return res
+    
 
+    def _min_max_x_y(self):
+        """ 
+        Returns the minimum and maximum values of the 'x' and 'y' attributes in a NetworkX graph's nodes using NumPy.
+
+        Parameters:
+        - graph (networkx.Graph): The input graph.
+
+        Returns:
+        - tuple: (min_x, max_x, min_y, max_y)
+        """
+        attributes = np.array([(data['x'], data['y']) for _, data in self.get_nodes() if 'x' in data and 'y' in data])
+        
+        if attributes.size == 0:
+            raise ValueError("No nodes contain both 'x' and 'y' attributes.")
+        
+        min_x, min_y = np.min(attributes, axis=0)
+        max_x, max_y = np.max(attributes, axis=0)
+        
+        return min_x, max_x, min_y, max_y
+    
+
+    def _placed_brick(self) -> set:
+        """
+        Returns a set of coordinates where bricks are placed, including adjacent positions.
+        
+        This function collects the positions of bricks that are already placed in the graph, 
+        as well as the adjacent positions (to the right) of each placed brick. The coordinates 
+        are returned as a set of tuples, where each tuple represents a coordinate `(x, y)`.
+
+        Returns:
+            set: A set containing the coordinates of placed bricks and their adjacent positions.
+        """
+        placed_bricks = set()
+        for _, data in self.get_nodes():
+            placed_bricks.add((data['x'], data['y']))
+            placed_bricks.add((data['x'] + 1, data['y']))
+
+        return placed_bricks
+    
 
     def _empty_world(self) -> None:
         self.graph.add_node(0, x=-1, y=-1, saved=True, validity=True)
 
 
-    def _is_graph_empty(self) -> bool:
+    def is_world_empty(self) -> bool:
         if self.nodes_num() == 1:
             node = list(self.get_nodes())[0]
             if node[1].get('x') == -1 and node[1].get('y') == -1:
