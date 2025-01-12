@@ -11,11 +11,9 @@ from text2brick.models import BRICK_UNIT
 
 class GraphWorldAbstract(ABC):
 
-    graph : nx.Graph
-    world_dim : Tuple[int, int, int]
-
     def __init__(self, img: np.ndarray) -> None:
         super().__init__()
+        self.graph = nx.Graph()
 
     @abstractmethod
     def _create_graph_from_table(self, table: np.ndarray) -> nx.Graph:
@@ -46,7 +44,7 @@ class GraphWorldAbstract(ABC):
             nx.Graph: The updated graph where all connected bricks to a valid brick are marked as valid.
         """
         valid_nodes = [node for node in graph.nodes if graph.nodes[node].get('validity', False)]     
-        # print('Valid nodes:', valid_nodes)
+
         if not valid_nodes:
             return graph
 
@@ -81,7 +79,9 @@ class GraphWorldAbstract(ABC):
         
         if invalid_nodes:
             graph.remove_nodes_from(invalid_nodes)
-            return True 
+            if self.is_world_empty():
+                self._empty_world()
+            return True
         return False
     
 
@@ -111,6 +111,10 @@ class GraphWorldAbstract(ABC):
                 if debug:
                     print(f"Removed disconnected subgraph: {component}")
                 res = True
+
+        if self.is_world_empty():
+            self._empty_world()
+
         return res
     
 
@@ -151,7 +155,6 @@ class GraphWorldAbstract(ABC):
             print(f"Edge ({u}, {v}): {data}")
 
 
-
     def torch_to_graph(self, data: torch_geometric.data.Data) -> nx.Graph:
         return to_networkx(data)
     
@@ -159,7 +162,6 @@ class GraphWorldAbstract(ABC):
     def graph_to_np(self) -> np.ndarray:
         return nx.to_numpy_array(self.graph)
     
-
 
     def subgraph(self, nodes_num: int) -> nx.Graph:
         """

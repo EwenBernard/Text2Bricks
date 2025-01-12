@@ -17,11 +17,14 @@ class GraphLegoWorldData(GraphWorldAbstract):
     The graph structure is based on a 2D array (img), where each brick is represented by '1, 1'.
     The class includes methods for creating the graph, adding bricks, checking connections, and updating the graph's validity.
     """
+
     graph : nx.Graph
     
     world_dim : Tuple[int, int, int]
 
+
     def __init__(self, img: np.ndarray):
+        super().__init__(img)
         self.graph = self._create_graph_from_table(img)
         self.world_dim = (img.shape[0], img.shape[1], 1) # (y, x, z)
 
@@ -110,6 +113,8 @@ class GraphLegoWorldData(GraphWorldAbstract):
         # If there are non-articulation bricks, return the one with the highest y-coordinate
         if non_articulation_bricks:
             return max(non_articulation_bricks, key=lambda node: node["y"])
+
+        print("No brick at edge", self.graph_to_table())
 
 
     def add_brick(self, x: int, y: int, debug: bool = False) -> bool:
@@ -313,8 +318,8 @@ class GraphLegoWorldData(GraphWorldAbstract):
         
         valid_mask, _ = self._validity_mask()
         not_matching_pos = np.column_stack(np.where((valid_mask == 1) & (target == 0))) # Valid positions but not matching the target
-        index = random.randint(0, not_matching_pos.shape[0] - 1)
-        not_matching_pos = not_matching_pos[index, :]
+        index = random.randint(0, not_matching_pos.shape[0])
+        not_matching_pos = not_matching_pos[index - 1, :]
 
         return {'x': not_matching_pos[1],
                 'y': target.shape[0] - not_matching_pos[0] - 1

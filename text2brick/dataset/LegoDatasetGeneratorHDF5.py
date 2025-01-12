@@ -61,7 +61,7 @@ class LegoDatasetGeneratorHDF5:
         if random_value < self.random_next_node_frequency / 2:
             brick_action = "invalid"
             brick_to_remove = lego_world.random_invalid_position(increase_dim=3)
-            validity = lego_world.add_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
+            validity = False
         elif self.random_next_node_frequency / 2 <= random_value < self.random_next_node_frequency:
             brick_action = "add"
             brick_to_remove = lego_world.not_matching_pos(array)
