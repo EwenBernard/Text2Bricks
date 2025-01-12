@@ -50,9 +50,28 @@ class LegoDatasetGeneratorHDF5:
         )
         self.h5_file.attrs["num_samples"] = self.num_samples
 
+
     def _process_graph(self, lego_world: GraphLegoWorldData):
         data = lego_world.graph_to_torch()
         return data.edge_index.numpy(), data.x.numpy()
+    
+
+    def _determine_brick_action(self, lego_world: GraphLegoWorldData, array: np.array) -> Tuple[dict, str, bool]:
+        random_value = random.random()
+        if random_value < self.random_next_node_frequency / 2:
+            brick_action = "invalid"
+            brick_to_remove = lego_world.random_invalid_position(increase_dim=3)
+            validity = lego_world.add_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
+        elif self.random_next_node_frequency / 2 <= random_value < self.random_next_node_frequency:
+            brick_action = "add"
+            brick_to_remove = lego_world.not_matching_pos(array)
+            validity = lego_world.add_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
+        else:
+            brick_action = "remove"
+            brick_to_remove = lego_world.get_brick_at_edge()
+            validity = lego_world.remove_brick(brick_to_remove.get("x"), brick_to_remove.get("y"), debug=False)
+        
+        return brick_to_remove, brick_action, validity
     
 
     def generate_sample(self, mnist_idx: int, idx: int):
@@ -75,29 +94,20 @@ class LegoDatasetGeneratorHDF5:
 
         global_starting_index = self.iteration_count
         reward = 0
-        self.reward_function.last_iou = 0
+        self.reward_function.last_iou = 1
         count = 0
         
         # Process iterations
         iteration_group = self.h5_file["iterations"].create_group(f"sample_{idx}")
 
-        # TODO: Reward pas bonne depuis qu'on prend la tendance de l'IoU, toujour négative parce qu'on enleve des briques
-
         while not lego_world.is_world_empty():
-            random_value = random.random()
-            if random_value < self.random_next_node_frequency / 2: # Invalid brick
-                validity = False
-                brick_to_remove = lego_world.random_invalid_position(increase_dim=3)
-            elif self.random_next_node_frequency / 2 <= random_value <  self.random_next_node_frequency:
-                brick_to_remove = lego_world.not_matching_pos(array) # Get a not matching position
-                validity = lego_world.add_brick(brick_to_remove.get("x"), brick_to_remove.get("y"))
-            else: # Valid brick
-                brick_to_remove = lego_world.get_brick_at_edge()
-                validity = lego_world.remove_brick(brick_to_remove.get("x"), brick_to_remove.get("y"), debug=False)
+
+            brick_to_remove, brick_action, validity = self._determine_brick_action(lego_world, array)
+            current_image = lego_world.graph_to_table()
+            reversed=not brick_action == "add"
+            tmp_reward = self.reward_function(array, current_image, validity, reversed=reversed)[0]
 
             # Generate current image and compute reward
-            current_image = lego_world.graph_to_table()
-            tmp_reward = self.reward_function(array, current_image, validity)[0]
             reward += tmp_reward
 
             # Process current state

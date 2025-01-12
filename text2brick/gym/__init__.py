@@ -1,4 +1,4 @@
-from .components.RewardFunction import IoUValidityRewardFunc, AbstractRewardFunc
+from .components.RewardFunction import AbstractRewardFunc, IoUValidityRewardFunc, IoUReversedValidityRewardFunc
 from .env.LegoEnv import LegoEnv
 from .models.BrickPlacementGNN import BrickPlacementGNN
 from .models.MLPFusion import MLP

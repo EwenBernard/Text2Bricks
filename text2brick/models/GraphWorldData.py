@@ -1,25 +1,25 @@
 from typing import Tuple
 import networkx as nx
 import torch_geometric
-from torch_geometric.utils.convert import from_networkx, to_networkx
+from torch_geometric.utils.convert import from_networkx
 from torch_geometric.data import Data
 import torch
 import numpy as np
-from collections import deque
 import copy
 import random
 
-from text2brick.models import BRICK_UNIT
+from text2brick.models import GraphWorldAbstract
 
-class GraphLegoWorldData:
+
+class GraphLegoWorldData(GraphWorldAbstract):
     """
     A class representing a LEGO world as a graph where each brick is a node.
-    The graph structure is based on a 2D array (img), where each brick is represented by '1'.
+    The graph structure is based on a 2D array (img), where each brick is represented by '1, 1'.
     The class includes methods for creating the graph, adding bricks, checking connections, and updating the graph's validity.
     """
     graph : nx.Graph
-    brick_dim : Tuple[int, int, int] = (2, 1, 2)
-    world_dim : Tuple[int, int, int] = (10, 10, 1)
+    
+    world_dim : Tuple[int, int, int]
 
     def __init__(self, img: np.ndarray):
         self.graph = self._create_graph_from_table(img)
@@ -224,7 +224,7 @@ class GraphLegoWorldData:
         for y in range(self.world_dim[0]):
             for x in range(self.world_dim[1]):
                 
-                # Don't process when x or y is too far from the 
+                # Don't process when x or y is too far from the build
                 if (x + 2 <= min_x or x - 2 >= max_x and y > 0) or y - 2 >= max_y:
                     continue
 
@@ -308,6 +308,9 @@ class GraphLegoWorldData:
                 - 'x': The x-coordinate of the position.
                 - 'y': The y-coordinate of the position (adjusted for the world coordinate system).
         """
+        if target.shape != self.world_dim[:2]:
+            raise ValueError("Target dimensions doesn't match the world dimensions.")
+        
         valid_mask, _ = self._validity_mask()
         not_matching_pos = np.column_stack(np.where((valid_mask == 1) & (target == 0))) # Valid positions but not matching the target
         index = random.randint(0, not_matching_pos.shape[0] - 1)
@@ -316,39 +319,6 @@ class GraphLegoWorldData:
         return {'x': not_matching_pos[1],
                 'y': target.shape[0] - not_matching_pos[0] - 1
                 }
-
-
-    def _propagate_brick_validity(self, graph: nx.Graph) -> nx.Graph:
-        """
-        Propagates the validity of a brick to all connected bricks.
-        If a brick is valid, all bricks connected to it will also be marked valid.
-        
-        Args:
-            graph (nx.Graph): The graph representing the LEGO structure with nodes and edges.
-            
-        Returns:
-            nx.Graph: The updated graph where all connected bricks to a valid brick are marked as valid.
-        """
-        valid_nodes = [node for node in graph.nodes if graph.nodes[node].get('validity', False)]     
-        # print('Valid nodes:', valid_nodes)
-        if not valid_nodes:
-            return graph
-
-        # Propagate validity to all connected bricks using BFS
-        visited_for_validity = set(valid_nodes)  # Start with already valid nodes
-        queue = deque(valid_nodes)
-        
-        while queue:
-            current_node = queue.popleft()
-            # Check connected nodes
-            for neighbor in graph.neighbors(current_node):
-                if neighbor not in visited_for_validity:
-                    visited_for_validity.add(neighbor)
-                    # Mark this brick as valid
-                    graph.nodes[neighbor]['validity'] = True
-                    queue.append(neighbor)
-
-        return graph
     
 
     def _check_connection(self, data1, data2) -> bool:
@@ -396,24 +366,6 @@ class GraphLegoWorldData:
         ):
             return True
         return False
-
-    
-    def _remove_invalids(self, graph: nx.Graph) -> bool:
-        """
-        Removes all invalid nodes (bricks) from the graph.
-        
-        Args:
-            graph (nx.Graph): The graph representing the LEGO structure.
-        
-        Returns:
-            bool: True if any invalid nodes were removed, False otherwise.
-        """
-        invalid_nodes = [node for node, data in graph.nodes(data=True) if not data.get('validity', False)]
-        
-        if invalid_nodes:
-            graph.remove_nodes_from(invalid_nodes)
-            return True 
-        return False
      
 
     def _check_overlap(self, x: int, y: int) -> bool:
@@ -431,38 +383,6 @@ class GraphLegoWorldData:
             if (data['x'] == x or data['x'] + 1 == x or data['x'] == x + 1) and data['y'] == y:
                 return True
         return False
-    
-
-    def _remove_disconnected_subgraphs(self, debug: bool = True) -> None:
-        """
-        Removes disconnected subgraphs from the main graph. A subgraph is considered disconnected if 
-        it does not contain any node with 'y == 0' (which represents ground level).
-        
-        Args:
-            debug (bool, optional): If True, prints debug information about the graph before and after removal.
-        
-        Returns:
-            bool: True if any disconnected subgraphs were removed, False otherwise.
-        """
-        # Find all connected components in the graph
-        connected_components = list(nx.connected_components(self.graph))
-        res = False
-        # Loop through each connected component
-        for component in connected_components:
-            # Check if any node in the component has 'y == 0'
-            has_ground = any(self.graph.nodes[node].get('y') == 0 for node in component)
-            
-            # If the component does not have any node with 'y == 0', remove it
-            if not has_ground:
-                if debug:
-                    print(self.graph_to_table())
-
-                self.graph.remove_nodes_from(component)
-                if debug:
-                    print(self.graph_to_table())
-                    print(f"Removed disconnected subgraph: {component}")
-                res = True
-        return res
     
 
     def _min_max_x_y(self):
@@ -505,54 +425,6 @@ class GraphLegoWorldData:
         return placed_bricks
     
 
-    def _empty_world(self) -> None:
-        self.graph.add_node(0, x=-1, y=-1, saved=True, validity=True)
-
-
-    def is_world_empty(self) -> bool:
-        if self.nodes_num() == 1:
-            node = list(self.get_nodes())[0]
-            if node[1].get('x') == -1 and node[1].get('y') == -1:
-                return True
-        return False
-    
-
-    def nodes_num(self) -> int:
-        return self.graph.number_of_nodes()
-    
-
-    def edges_num(self) -> int:
-        return self.graph.number_of_edges()
-    
-
-    def get_nodes(self):
-        return self.graph.nodes(data=True)
-    
-
-    def get_edges(self):
-        return self.graph.edges(data=True)
-     
-
-    def print_graph(self):
-        print(f"Number of nodes: {self.graph.number_of_nodes()}")
-        print(f"Number of edges: {self.graph.number_of_edges()}")
-        for node, data in self.graph.nodes(data=True):
-            print(f"Node {node}: {data}")
-        for u, v, data in self.graph.edges(data=True):
-            print(f"Edge ({u}, {v}): {data}")
-
-
-    def subgraph(self, nodes_num) -> nx.Graph:
-        if nodes_num > self.graph.number_of_nodes():
-            raise ValueError(f"Requested {nodes_num} nodes, but the graph only has {self.graph.number_of_nodes()} nodes.")
-
-        # Select the specified number of nodes
-        selected_nodes = list(self.graph.nodes)[:nodes_num]
-        subgraph = self.graph.subgraph(selected_nodes).copy()
-
-        return subgraph
-    
-
     def graph_to_torch(self, deepcopy=False, keep_unique_edge=False, attrs_to_keep=['x', 'y']) -> torch_geometric.data.Data:
         
         if self.graph.number_of_nodes() == 0:
@@ -579,28 +451,3 @@ class GraphLegoWorldData:
             data.edge_index = unique_edges
 
         return data
-    
-
-    def torch_to_graph(self, data: torch_geometric.data.Data) -> nx.Graph:
-        return to_networkx(data)
-    
-
-    def graph_to_np(self) -> np.ndarray:
-        return nx.to_numpy_array(self.graph)
-    
-
-    def save_as_ldraw(self, filename: str = "test_ldr", delete_all: bool = False):
-        # Open the file in write mode if delete_all is True, else in append mode
-        mode = "w" if delete_all else "a"
-        with open(filename + ".ldr", mode) as file:
-            for _, data in self.get_nodes():
-                if not data['saved']:
-                    # Create the LDraw line for the part
-                    ldr_line = (
-                        f"1 15 {data['x'] * BRICK_UNIT.W} {data['y'] * BRICK_UNIT.H} 1 "
-                        f"1 0 0 0 1 0 0 0 1 3003.dat"
-                    )
-                    # Write the line to the file
-                    file.write(ldr_line + "\n")
-                    # Mark the part as saved
-                    data['saved'] = True
